@@ -208,7 +208,8 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
           m."created_at", 
           m."sender_id", 
           m."group_id",
-          u."name" as "senderName"
+          u."name" as "senderName",
+          u."image" as "senderImage"
         FROM ${messagesTable} m
         JOIN ${usersTable} u ON m."sender_id" = u."id"
         WHERE ${inArray(sql`m."group_id"`, groupIds)}
@@ -236,6 +237,7 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
           createdAt,
           senderId: msg.sender_id,
           senderName: msg.senderName, // Aliased in SQL
+          senderImage: msg.senderImage, // Aliased in SQL
         });
       });
     }
@@ -330,6 +332,7 @@ router.get("/:groupId/messages", authenticateUser, async (req, res) => {
         senderId: messagesTable.senderId,
         senderName: usersTable.name,
         senderEmail: usersTable.email,
+        senderImage: usersTable.image,
       })
       .from(messagesTable)
       .innerJoin(usersTable, eq(messagesTable.senderId, usersTable.id))
