@@ -33,6 +33,8 @@ export const ChatProvider = ({ children }) => {
   const selectedUserRef = useRef(selectedUser);
   const selectedGroupRef = useRef(selectedGroup);
   const currentUserRef = useRef(currentUser);
+  const lastUserIdRef = useRef(null);
+  const lastGroupIdRef = useRef(null);
 
   useEffect(() => {
     selectedUserRef.current = selectedUser;
@@ -79,11 +81,8 @@ export const ChatProvider = ({ children }) => {
   const fetchDirectMessages = useCallback(async (userId) => {
     if (!userId) return;
     setLoadingMessages(true);
-    // Add minimum delay for smooth skeleton transition
-    const minDelay = new Promise(resolve => setTimeout(resolve, 1200));
     try {
-      const fetchPromise = axiosInstance.get(`/api/messages/direct/${userId}`);
-      const [response] = await Promise.all([fetchPromise, minDelay]);
+      const response = await axiosInstance.get(`/api/messages/direct/${userId}`);
       
       const fetchedMessages = response.data.messages || [];
       setDirectMessages(prev => ({ ...prev, [userId]: fetchedMessages }));
@@ -101,10 +100,8 @@ export const ChatProvider = ({ children }) => {
   const fetchGroupMessages = useCallback(async (groupId) => {
     if (!groupId) return;
     setLoadingMessages(true);
-    const minDelay = new Promise(resolve => setTimeout(resolve, 1200));
     try {
-      const fetchPromise = axiosInstance.get(`/api/groups/${groupId}/messages`);
-      const [response] = await Promise.all([fetchPromise, minDelay]);
+      const response = await axiosInstance.get(`/api/groups/${groupId}/messages`);
       
       const fetchedMessages = response.data.messages || [];
       setGroupMessages(prev => ({ ...prev, [groupId]: fetchedMessages }));
@@ -130,24 +127,33 @@ export const ChatProvider = ({ children }) => {
   // Fetch messages and reset unread counts when selection changes
   useEffect(() => {
     if (selectedUser) {
+      const isNewUser = lastUserIdRef.current !== selectedUser.id;
+      
       // 1. Reset unread count locally and on server
       setUsers(prev => prev.map(u => String(u.id) === String(selectedUser.id) ? { ...u, unreadCount: 0 } : u));
       axiosInstance.post(`/api/messages/mark-read/${selectedUser.id}`, {}).catch(console.error);
 
-      // 2. Fetch or trigger delay if cached
-      if (!directMessages[selectedUser.id]) {
-        fetchDirectMessages(selectedUser.id);
-      } else {
-        // Even if cached, show skeleton for a moment for smooth transition
-        setLoadingMessages(true);
-        const timer = setTimeout(() => setLoadingMessages(false), 800);
-        return () => clearTimeout(timer);
+      // 2. Only trigger loading logic if we actually switched users
+      if (isNewUser) {
+        lastUserIdRef.current = selectedUser.id;
+        
+        // Clear previous state for a new selection if not cached
+        if (!directMessages[selectedUser.id]) {
+          fetchDirectMessages(selectedUser.id);
+        } else {
+          // If cached, we can show it instantly
+          setLoadingMessages(false);
+        }
       }
+    } else {
+      lastUserIdRef.current = null;
     }
-  }, [selectedUser, fetchDirectMessages, directMessages]);
+  }, [selectedUser, fetchDirectMessages]); // Removed activeMessages/directMessages dependency
 
   useEffect(() => {
     if (selectedGroup) {
+      const isNewGroup = lastGroupIdRef.current !== selectedGroup.id;
+
       // 0. Join the group room via socket FIRST
       if (socket && socket.connected) {
         console.log(`🔌 [SOCKET] Joining group room: group:${selectedGroup.id}`);
@@ -157,17 +163,21 @@ export const ChatProvider = ({ children }) => {
       // 1. Reset unread count locally
       setGroups(prev => prev.map(g => String(g.id) === String(selectedGroup.id) ? { ...g, unreadCount: 0 } : g));
 
-      // 2. Fetch or trigger delay if cached
-      if (!groupMessages[selectedGroup.id]) {
-        fetchGroupMessages(selectedGroup.id);
-      } else {
-        // Even if cached, show skeleton for a moment for smooth transition
-        setLoadingMessages(true);
-        const timer = setTimeout(() => setLoadingMessages(false), 800);
-        return () => clearTimeout(timer);
+      // 2. Only trigger loading logic if we actually switched groups
+      if (isNewGroup) {
+        lastGroupIdRef.current = selectedGroup.id;
+
+        if (!groupMessages[selectedGroup.id]) {
+          fetchGroupMessages(selectedGroup.id);
+        } else {
+          // If cached, show instantly
+          setLoadingMessages(false);
+        }
       }
+    } else {
+      lastGroupIdRef.current = null;
     }
-  }, [selectedGroup, fetchGroupMessages, groupMessages]);
+  }, [selectedGroup, fetchGroupMessages]); // Removed activeMessages/groupMessages dependency
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return users;

@@ -9,7 +9,7 @@ import { db } from "./config/db.js";
 import { messagesTable, usersTable, groupMembersTable } from "./drizzle/schema.js";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 // Routes
 import authRouter from "./routes/auth.routes.js";
@@ -319,6 +319,26 @@ io.on('connection', async (socket) => {
       if (!groupId || !content || !content.trim()) {
         console.error(`❌ Invalid message data - groupId: ${groupId}, content length: ${content?.length || 0}`);
         socket.emit("message_error", { error: "Invalid message data" });
+        return;
+      }
+
+      // 🛡️ CRITICAL: Verify user is still a member of the group
+      const [membership] = await db
+        .select()
+        .from(groupMembersTable)
+        .where(
+          and(
+            eq(groupMembersTable.groupId, groupId),
+            eq(groupMembersTable.userId, userId)
+          )
+        );
+
+      if (!membership) {
+        console.error(`❌ Permission denied: User ${userId} is not a member of group ${groupId}`);
+        socket.emit("message_error", { error: "You are no longer a member of this group" });
+        
+        // Force socket to leave the room if they somehow still have it
+        socket.leave(`group:${groupId}`);
         return;
       }
 

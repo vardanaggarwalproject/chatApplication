@@ -560,6 +560,11 @@ router.delete(
         req.io.to(`user:${userId}`).emit("group_member_removed", eventData);
         // Notify the current group members
         req.io.to(`group:${groupId}`).emit("group_member_removed", eventData);
+
+        // 🚪 CRITICAL: Force all user's sockets to leave the group room
+        // This ensures they stop receiving messages immediately
+        console.log(`🚪 [SOCKET] Forcing user:${userId} to leave group:${groupId}`);
+        req.io.in(`user:${userId}`).socketsLeave(`group:${groupId}`);
       }
 
       res.json({ message: "Member removed successfully" });
@@ -629,6 +634,10 @@ router.post("/:groupId/exit", authenticateUser, async (req, res) => {
         reason: "exit",
         timestamp: new Date().toISOString(),
       });
+
+      // 🚪 CRITICAL: Force all user's sockets to leave the group room
+      console.log(`🚪 [SOCKET] User ${userId} leaving group:${groupId}`);
+      req.io.in(`user:${userId}`).socketsLeave(`group:${groupId}`);
     }
 
     res.json({ message: "You have exited the group" });

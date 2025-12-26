@@ -171,7 +171,7 @@ const ChatSidebar = () => {
           variant="ghost" 
           size="icon" 
           onClick={() => setShowAddConversationModal(true)} 
-          className="rounded-2xl w-12 h-12 bg-[#040316] hover:bg-[#040316]/90 text-white shadow-lg active:scale-95 transition-all"
+          className="rounded-2xl w-12 h-12 bg-[#040316] text-white shadow-lg active:scale-95 transition-all"
         >
           <Plus className="w-6 h-6" />
         </Button>

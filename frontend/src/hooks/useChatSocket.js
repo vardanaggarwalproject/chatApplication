@@ -12,6 +12,7 @@ export const useChatSocket = () => {
     setDirectMessages,
     setGroupMessages,
     setSelectedUser,
+    setSelectedGroup,
     setSocketConnected,
     setConnectionStatus,
     fetchUsers,
