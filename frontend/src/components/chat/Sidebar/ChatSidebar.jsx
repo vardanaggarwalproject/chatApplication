@@ -135,7 +135,7 @@ const ChatSidebar = () => {
               </div>
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-slate-900 truncate text-[14px]">{currentUser?.userName}</span>
+                  <span className="font-black text-slate-900 truncate text-[14px]">{currentUser?.name || currentUser?.userName}</span>
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                 </div>
                 <span className="text-[11px] text-slate-400 font-bold truncate">{currentUser?.email || "No email provided"}</span>
@@ -211,7 +211,7 @@ const ChatSidebar = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => activeTab === 'users' ? setShowAddConversationModal(true) : setShowCreateGroup(true)}
-                className="h-8 rounded-lg bg-deepNavy hover:bg-deepNavy/90 text-white text-[10px] font-black uppercase tracking-widest px-3 shadow-md active:scale-95 transition-all"
+                className="h-8 rounded-lg bg-deepNavy text-white text-[10px] font-black uppercase tracking-widest px-3 shadow-md active:scale-95 transition-all"
             >
                 <Plus className="w-3 h-3 mr-1.5" />
                 New
