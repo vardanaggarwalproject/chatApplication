@@ -281,8 +281,9 @@ const HomePage = () => {
                         }`}
                       >
                         <AvatarImage
-                          src={userDetails?.avatar}
+                          src={userDetails?.image}
                           alt={userDetails?.fullName}
+                          // onClick={navigate("/chat")}
                         />
                         <AvatarFallback className="bg-gradient-to-br from-primaryColor to-secondaryColor text-slate-800 font-semibold text-sm">
                           {userDetails?.fullName?.charAt(0).toUpperCase()}

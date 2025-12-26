@@ -60,7 +60,6 @@ const AddNewConversationModal = ({
     const query = debouncedSearchQuery.toLowerCase();
     return availableUsers.filter(
       (user) =>
-        user.userName?.toLowerCase().includes(query) ||
         user.name?.toLowerCase().includes(query) ||
         user.email?.toLowerCase().includes(query)
     );
@@ -144,13 +143,13 @@ const AddNewConversationModal = ({
                 >
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primaryColor to-secondaryColor">
+                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border shadow-sm">
                       <AvatarImage
                         src={user?.image || ""}
                         alt="User Avatar"
                       />
-                      <AvatarFallback className="text-white font-semibold text-xs sm:text-sm">
-                        {getInitials(user.userName || user.name)}
+                      <AvatarFallback className="bg-slate-100 text-slate-500 font-semibold text-xs sm:text-sm">
+                        {getInitials(user.name || user.userName)}
                       </AvatarFallback>
                     </Avatar>
                     {user.isOnline && (

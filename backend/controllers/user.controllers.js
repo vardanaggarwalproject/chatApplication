@@ -125,18 +125,28 @@ export const getAllUsers = async (req, res) => {
         : [];
        
     rows.forEach(msg => {
-       // Map raw snake_case DB fields to camelCase for frontend
-       // Note: msg.partner_id is available now from subquery but we use logic for safety or just use it
        const partnerId = String(msg.partner_id);
        
+       // Standardize the timestamp to UTC ISO string
+       let createdAt = null;
+       if (msg.created_at) {
+          const raw = msg.created_at;
+          // If it's a string from raw SQL without timezone, append Z to force UTC interpretation
+          if (typeof raw === 'string' && !raw.includes('Z') && !raw.includes('+')) {
+            createdAt = new Date(raw + 'Z').toISOString();
+          } else {
+            createdAt = new Date(raw).toISOString();
+          }
+       }
+
        lastMessageMap.set(partnerId, {
-         ...msg,
+         id: msg.id,
+         content: msg.content,
          senderId: msg.sender_id,
          receiverId: msg.receiver_id,
          groupId: msg.group_id,
-         createdAt: msg.created_at,
+         createdAt,
          isRead: msg.is_read,
-         // messageType and other fields should also be mapped if used
        });
     });
 
@@ -221,7 +231,13 @@ export const updateUserProfile = async (req, res) => {
 
     // Build update object with only provided fields
     const updateData = {};
-    if (name !== undefined && name.trim() !== "") updateData.name = name.trim();
+    // Validate name if provided
+    if (name !== undefined && name.trim() !== "") {
+      if (name.trim().length < 2 || name.trim().length > 20) {
+        return res.status(400).json({ message: "Name must be between 2 and 20 characters long" });
+      }
+      updateData.name = name.trim();
+    }
     if (email !== undefined && email.trim() !== "") updateData.email = email.trim();
     if (image !== undefined && image.trim() !== "") updateData.image = image.trim();
     updateData.updatedAt = new Date();

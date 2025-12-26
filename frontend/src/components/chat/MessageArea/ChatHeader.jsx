@@ -59,7 +59,9 @@ const ChatHeader = () => {
               <span className="font-bold text-slate-800 leading-tight truncate max-w-[150px] sm:max-w-xs text-[15px]">
                 {selectedGroup.name}
               </span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Group</span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate max-w-[150px]">
+                {selectedGroup.description || "Group"}
+              </span>
             </div>
           </>
         )}

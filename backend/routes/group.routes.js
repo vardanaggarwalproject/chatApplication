@@ -221,10 +221,20 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
       const rows = result.rows || [];
 
       rows.forEach((msg) => {
+        let createdAt = null;
+        if (msg.created_at) {
+          const raw = msg.created_at;
+          if (typeof raw === 'string' && !raw.includes('Z') && !raw.includes('+')) {
+            createdAt = new Date(raw + 'Z').toISOString();
+          } else {
+            createdAt = new Date(raw).toISOString();
+          }
+        }
+
         // Map snake_case headers to the object structure expected by frontend
         lastMessageMap.set(msg.group_id, {
           content: msg.content,
-          createdAt: msg.created_at,
+          createdAt,
           senderId: msg.sender_id,
           senderName: msg.senderName, // Aliased in SQL
           senderUserName: msg.senderUserName, // Aliased in SQL

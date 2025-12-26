@@ -172,13 +172,13 @@ const AddGroupMembersModal = ({
                     >
                       {/* Avatar */}
                       <div className="relative flex-shrink-0">
-                        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primaryColor to-secondaryColor">
+                        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border shadow-sm">
                           <AvatarImage
                             src={user?.image || ""}
                             alt="User Avatar"
                           />
-                          <AvatarFallback className="text-white font-semibold text-xs sm:text-sm">
-                            {getInitials(user.userName || user.name)}
+                          <AvatarFallback className="bg-slate-100 text-slate-500 font-semibold text-xs sm:text-sm border-none shadow-none">
+                            {getInitials(user.name || user.userName)}
                           </AvatarFallback>
                         </Avatar>
                         {user.isOnline && (
@@ -227,13 +227,13 @@ const AddGroupMembersModal = ({
                     >
                       {/* Avatar */}
                       <div className="relative flex-shrink-0">
-                        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primaryColor to-secondaryColor">
+                        <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border shadow-sm">
                           <AvatarImage
                             src={member?.image || ""}
                             alt="User Avatar"
                           />
-                          <AvatarFallback className="text-white font-semibold text-xs sm:text-sm">
-                            {getInitials(member.userName || member.name)}
+                          <AvatarFallback className="bg-slate-100 text-slate-500 font-semibold text-xs sm:text-sm border-none shadow-none">
+                            {getInitials(member.name || member.userName)}
                           </AvatarFallback>
                         </Avatar>
                         {member.isOnline && (

@@ -11,10 +11,24 @@ export const signUp = async (req, res) => {
     const { userName, email, password, name } = req.body;
 
     // Validate input
-    if (!userName || !email || !password) {
+    if (!userName || !email || !password || !name) {
       return res.status(400).json({ 
-        message: "Username, email, and password are required" 
+        message: "Name, Username, email, and password are required" 
       });
+    }
+
+    // Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    if (name.trim().length < 2 || name.trim().length > 20) {
+      return res.status(400).json({ message: "Name must be between 2 and 20 characters long" });
+    }
+
+    if (userName.trim().length < 3 || userName.trim().length > 20) {
+      return res.status(400).json({ message: "Username must be between 3 and 20 characters long" });
     }
 
     // Check if user already exists
@@ -27,15 +41,7 @@ export const signUp = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Check if username is taken
-    const [existingUserName] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.userName, userName));
 
-    if (existingUserName) {
-      return res.status(400).json({ message: "Username is already taken" });
-    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);

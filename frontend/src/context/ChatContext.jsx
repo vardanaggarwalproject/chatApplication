@@ -78,40 +78,33 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchDirectMessages = useCallback(async (userId) => {
+  const fetchDirectMessages = useCallback(async (userId, isBackground = false) => {
     if (!userId) return;
-    setLoadingMessages(true);
+    if (!isBackground) setLoadingMessages(true);
     try {
       const response = await axiosInstance.get(`/api/messages/direct/${userId}`);
       
       const fetchedMessages = response.data.messages || [];
       setDirectMessages(prev => ({ ...prev, [userId]: fetchedMessages }));
-      
-      // Mark as read
-      await axiosInstance.post(`/api/messages/mark-read/${userId}`, {});
-      setUsers(prev => prev.map(u => String(u.id) === String(userId) ? { ...u, unreadCount: 0 } : u));
     } catch (error) {
-      console.error("❌ Error fetching direct messages:", error);
+      console.error("Error fetching direct messages:", error);
     } finally {
-      setLoadingMessages(false);
+      if (!isBackground) setLoadingMessages(false);
     }
   }, []);
 
-  const fetchGroupMessages = useCallback(async (groupId) => {
+  const fetchGroupMessages = useCallback(async (groupId, isBackground = false) => {
     if (!groupId) return;
-    setLoadingMessages(true);
+    if (!isBackground) setLoadingMessages(true);
     try {
       const response = await axiosInstance.get(`/api/groups/${groupId}/messages`);
       
       const fetchedMessages = response.data.messages || [];
       setGroupMessages(prev => ({ ...prev, [groupId]: fetchedMessages }));
-      
-      // Reset unread count
-      setGroups(prev => prev.map(g => String(g.id) === String(groupId) ? { ...g, unreadCount: 0 } : g));
     } catch (error) {
-      console.error("❌ Error fetching group messages:", error);
+      console.error("Error fetching group messages:", error);
     } finally {
-      setLoadingMessages(false);
+      if (!isBackground) setLoadingMessages(false);
     }
   }, []);
 
@@ -143,6 +136,8 @@ export const ChatProvider = ({ children }) => {
         } else {
           // If cached, we can show it instantly
           setLoadingMessages(false);
+          // 🛡️ RE-VALIDATE: Even if cached, check for new messages in background
+          fetchDirectMessages(selectedUser.id, true); 
         }
       }
     } else {
@@ -172,6 +167,8 @@ export const ChatProvider = ({ children }) => {
         } else {
           // If cached, show instantly
           setLoadingMessages(false);
+          // 🛡️ RE-VALIDATE: Background fetch to ensure no missed messages
+          fetchGroupMessages(selectedGroup.id, true);
         }
       }
     } else {

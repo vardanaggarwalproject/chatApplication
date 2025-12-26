@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useChat } from '../../../context/ChatContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,52 @@ import { Loader2, UserMinus, UserPlus, LogOut, Trash2 } from "lucide-react";
 import axiosInstance from '../../../utils/axiosConfig';
 import AddGroupMembersModal from '@/components/AddGroupMembersModal';
 
+const getInitials = (name) => {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 const GroupMembersModal = ({ isOpen, onClose, group }) => {
   const { currentUser, fetchGroups, setSelectedGroup, allUsers } = useChat();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddMember, setShowAddMember] = useState(false);
+
+  // Derive enriched members with the latest profile data from allUsers and currentUser
+  const enrichedMembers = useMemo(() => {
+    return members.map(member => {
+      // If it's the current user, use their global profile data
+      if (currentUser && String(member.id) === String(currentUser.id)) {
+        return {
+          ...member,
+          name: currentUser.name,
+          userName: currentUser.userName,
+          image: currentUser.image,
+          email: currentUser.email,
+          isOnline: true
+        };
+      }
+
+      // Look up other users in the allUsers context
+      const globalUser = allUsers.find(u => String(u.id) === String(member.id));
+      if (globalUser) {
+        return {
+          ...member,
+          name: globalUser.name,
+          userName: globalUser.userName,
+          image: globalUser.image,
+          email: globalUser.email,
+          isOnline: globalUser.isOnline
+        };
+      }
+      return member;
+    });
+  }, [members, allUsers, currentUser]);
 
   const fetchMembers = async () => {
     try {
@@ -91,25 +132,42 @@ const GroupMembersModal = ({ isOpen, onClose, group }) => {
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
-              <span>{group.name} - Members</span>
-            </DialogTitle>
-          </DialogHeader>
+            <DialogHeader>
+              <DialogTitle className="flex justify-between items-center text-xl font-black text-slate-900">
+                <span>{group.name} - Members</span>
+              </DialogTitle>
+              {group.description && (
+                <p className="text-sm text-slate-500 font-medium mt-1 leading-relaxed">
+                  {group.description}
+                </p>
+              )}
+            </DialogHeader>
 
           <div className="py-4 space-y-4 max-h-[50vh] overflow-y-auto">
             {loading ? (
               <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-primaryColor" /></div>
             ) : (
-              members.map(member => (
+              enrichedMembers.map(member => (
                 <div key={member.id} className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={member.image} />
-                    <AvatarFallback>{member.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold">{member.name || member.userName}</p>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">
+                  <div className="relative">
+                    <Avatar className="w-10 h-10 border shadow-sm">
+                      <AvatarImage src={member.image} />
+                      <AvatarFallback className="text-white bg-slate-400 font-semibold text-xs sm:text-sm">
+                        {getInitials(member.name || member.userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {member.isOnline && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm" />
+                    )}
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="font-semibold text-slate-800 text-xs sm:text-sm truncate">
+                      {member.name || member.userName}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">
+                      {member.email}
+                    </p>
+                    <p className="text-xs text-darkPurple font-medium">
                       {member.role === "admin" ? "👑 Admin" : "Member"}
                     </p>
                   </div>
@@ -154,7 +212,7 @@ const GroupMembersModal = ({ isOpen, onClose, group }) => {
         isOpen={showAddMember}
         onOpenChange={setShowAddMember}
         allUsers={allUsers}
-        groupMembers={members}
+        groupMembers={enrichedMembers}
         onAddMember={handleAddMember}
         onRemoveMember={handleRemoveMember}
         isAdmin={isAdmin}

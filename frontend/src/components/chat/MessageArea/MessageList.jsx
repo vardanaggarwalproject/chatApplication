@@ -125,9 +125,8 @@ const MessageList = () => {
 
                   return (
                     <motion.div
-                      initial={isLastFew ? { opacity: 0, y: 10 } : false}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
+                      initial={false}
+                      animate={false}
                       key={msg.id || index} 
                       className={`flex ${isMe ? 'justify-end' : 'justify-start'} w-full`}
                     >

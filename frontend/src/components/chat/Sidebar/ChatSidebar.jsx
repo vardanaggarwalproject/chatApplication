@@ -10,19 +10,39 @@ import Logo from '../../Logo';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return "";
+  
+  // Use a Date object, parsing the ISO string from backend correctly
   const date = new Date(dateString);
   const now = new Date();
-  const diffInSeconds = Math.floor((now - date) / 1000);
-
-  if (diffInSeconds < 60) return "just now";
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `${diffInDays}d ago`;
   
-  return date.toLocaleDateString();
+  // Check if invalid date
+  if (isNaN(date.getTime())) return "Invalid Time";
+
+  const isToday = date.toDateString() === now.toDateString();
+  
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+  
+  if (isToday) {
+    // Matches the bubble format (24h)
+    return date.toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+    });
+  }
+  
+  if (isYesterday) {
+    return "Yesterday";
+  }
+
+  const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  if (diffInDays < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  }
+  
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 };
 
 const SidebarItemSkeleton = () => (
@@ -34,6 +54,16 @@ const SidebarItemSkeleton = () => (
         </div>
     </div>
 );
+
+const getInitials = (name) => {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
 
 import { useDebounce } from '../../../hooks/useDebounce';
 
@@ -127,7 +157,7 @@ const ChatSidebar = () => {
                     <AvatarImage src={currentUser.image} alt={currentUser.userName} />
                   ) : (
                     <AvatarFallback className="bg-primaryColor/10 text-primaryColor font-bold">
-                       {currentUser?.userName?.substring(0, 2).toUpperCase()}
+                       {getInitials(currentUser?.name || currentUser?.userName)}
                     </AvatarFallback>
                   )}
                 </Avatar>
@@ -239,7 +269,7 @@ const ChatSidebar = () => {
                   <div className="relative">
                     <Avatar className={`w-[52px] h-[52px] border-2 shadow-sm transition-all duration-500 ${selectedUser?.id === user.id ? 'border-primaryColor' : 'border-white group-hover:border-slate-200'}`}>
                       <AvatarImage src={user.image} />
-                      <AvatarFallback className="bg-slate-100 text-slate-400 font-black text-sm">{user.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="bg-slate-100 text-slate-400 font-black text-sm">{getInitials(user.name || user.userName)}</AvatarFallback>
                     </Avatar>
                     {user.isOnline && <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-lg" />}
                   </div>

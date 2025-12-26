@@ -15,6 +15,13 @@
       "when": 1766508187719,
       "tag": "0001_illegal_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766738367349,
+      "tag": "0002_fat_hobgoblin",
+      "breakpoints": true
     }
   ]
 }

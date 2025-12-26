@@ -10,6 +10,16 @@ import { Check, Search } from "lucide-react";
 import axiosInstance from '../../../utils/axiosConfig';
 import socket from '../../../socket';
 
+const getInitials = (name) => {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 const CreateGroupModal = ({ isOpen, onClose }) => {
   const { allUsers, fetchGroups } = useChat();
   const [name, setName] = useState("");
@@ -91,12 +101,19 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
             <div className="border rounded-lg max-h-[200px] overflow-y-auto divide-y">
               {filteredUsers.map(user => (
                 <div key={user.id} onClick={() => toggleMember(user.id)} className="flex items-center gap-3 p-2 hover:bg-slate-50 cursor-pointer transition-colors">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={user.image} />
-                    <AvatarFallback>{user.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={user.image} />
+                      <AvatarFallback className="bg-slate-100 text-slate-500 text-[10px] font-bold">
+                        {getInitials(user.name || user.userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {user.isOnline && (
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full shadow-sm" />
+                    )}
+                  </div>
                   <span className="flex-1 text-sm font-medium">{user.name || user.userName}</span>
-                  {selectedMembers.includes(user.id) && <Check className="w-4 h-4 text-primaryColor" />}
+                  {selectedMembers.includes(user.id) && <Check className="w-4 h-4 text" />}
                 </div>
               ))}
             </div>
