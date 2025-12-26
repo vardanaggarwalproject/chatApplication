@@ -30,20 +30,43 @@ const MessageSkeleton = ({ side }) => (
 const MessageList = () => {
   const { activeMessages, currentUser, loadingMessages, pendingSelection, selectedUser, selectedGroup } = useChat();
   const scrollRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const lastMessageCount = useRef(0);
+  const lastChatId = useRef(null);
+
+  const currentChatId = selectedUser?.id || selectedGroup?.id;
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    } else if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  };
 
   useEffect(() => {
-    // Smoother scroll to bottom when messages load or change
-    if (scrollRef.current && !loadingMessages && !pendingSelection) {
-      const scroll = scrollRef.current;
-      // Small timeout to allow AnimatePresence to mount/animate
-      setTimeout(() => {
-        scroll.scrollTo({
-          top: scroll.scrollHeight,
-          behavior: activeMessages.length > 50 ? 'auto' : 'smooth'
-        });
-      }, 50);
+    if (!loadingMessages && !pendingSelection && activeMessages.length > 0) {
+      const isChatSwitch = lastChatId.current !== currentChatId;
+      const behavior = isChatSwitch ? 'auto' : 'smooth';
+      
+      // Perform initial scroll
+      scrollToBottom(behavior);
+
+      // Multiple attempts to ensure we hit the bottom as images/layouts stabilize
+      const timers = [
+          setTimeout(() => scrollToBottom(behavior), 100),
+          setTimeout(() => scrollToBottom(behavior), 300),
+          setTimeout(() => scrollToBottom('auto'), 600), // Final forced sync
+      ];
+
+      lastMessageCount.current = activeMessages.length;
+      lastChatId.current = currentChatId;
+
+      return () => timers.forEach(clearTimeout);
+    } else if (loadingMessages || pendingSelection) {
+        lastMessageCount.current = 0;
     }
-  }, [activeMessages, loadingMessages, pendingSelection]);
+  }, [activeMessages, loadingMessages, pendingSelection, currentChatId]);
 
   if (!selectedUser && !selectedGroup) {
     return (
@@ -82,11 +105,11 @@ const MessageList = () => {
         ) : (
           <motion.div 
             key="list"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
             ref={scrollRef} 
-            className="flex-1 p-4 sm:p-8 overflow-y-auto flex flex-col gap-4 sm:gap-6 scroll-smooth z-10 h-full"
+            className="flex-1 p-4 sm:p-8 overflow-y-auto flex flex-col gap-4 sm:gap-4 z-10 h-full scroll-smooth"
           >
             {activeMessages.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse opacity-40">
@@ -94,50 +117,54 @@ const MessageList = () => {
                 No messages yet
               </div>
             ) : (
-              activeMessages.map((msg, index) => {
-                const isMe = String(msg.senderId) === String(currentUser?.id || currentUser?._id);
-                const showAvatar = index === 0 || String(activeMessages[index - 1]?.senderId) !== String(msg.senderId);
+              <>
+                {activeMessages.map((msg, index) => {
+                  const isMe = String(msg.senderId) === String(currentUser?.id || currentUser?._id);
+                  const showAvatar = index === 0 || String(activeMessages[index - 1]?.senderId) !== String(msg.senderId);
+                  const isLastFew = index >= activeMessages.length - 3;
 
-                return (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index > activeMessages.length - 20 ? (index - (activeMessages.length - 20)) * 0.02 : 0 }}
-                    key={msg.id || index} 
-                    className={`flex ${isMe ? 'justify-end' : 'justify-start'} w-full`}
-                  >
-                    <div className={`flex gap-3 max-w-[85%] sm:max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <div className="w-9 flex-shrink-0 self-end mb-1">
-                        {showAvatar && !isMe && (
-                          <Avatar className="w-9 h-9 border-2 border-white shadow-md ring-2 ring-primaryColor/10">
-                            <AvatarImage src={msg.senderImage} />
-                            <AvatarFallback className="text-[10px] bg-slate-100 font-black text-slate-400">{msg.senderUserName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1`}>
-                        {showAvatar && !isMe && selectedGroup && (
-                          <span className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-widest">
-                            {msg.senderName || msg.senderUserName}
-                          </span>
-                        )}
-                        <div className={`group relative px-4 py-2.5 rounded-[18px] text-[14px] shadow-sm transition-all hover:shadow-md ${
-                          isMe 
-                            ? 'bg-slate-100 text-slate-800 rounded-tr-none' 
-                            : 'bg-deepNavy text-white rounded-tl-none'
-                        }`}>
-                          <div className="break-all leading-tight">
-                            {msg.content}
-                          </div>
-                          <div className={`text-[9px] mt-1 opacity-60 font-bold flex items-center gap-1.5 ${isMe ? 'text-slate-500 justify-end' : 'text-white/80 justify-start'}`}>
-                              {formatTime(msg.createdAt)}
+                  return (
+                    <motion.div
+                      initial={isLastFew ? { opacity: 0, y: 10 } : false}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      key={msg.id || index} 
+                      className={`flex ${isMe ? 'justify-end' : 'justify-start'} w-full`}
+                    >
+                      <div className={`flex gap-3 max-w-[85%] sm:max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className="w-9 flex-shrink-0 self-end mb-1">
+                          {showAvatar && !isMe && (
+                            <Avatar className="w-9 h-9 border-2 border-white shadow-md ring-2 ring-primaryColor/10">
+                              <AvatarImage src={msg.senderImage} />
+                              <AvatarFallback className="text-[10px] bg-slate-100 font-black text-slate-400">{msg.senderUserName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                          )}
+                        </div>
+                        <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1`}>
+                          {showAvatar && !isMe && selectedGroup && (
+                            <span className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-widest">
+                              {msg.senderName || msg.senderUserName}
+                            </span>
+                          )}
+                          <div className={`group relative px-4 py-2.5 rounded-[18px] text-[14px] shadow-sm transition-all hover:shadow-md ${
+                            isMe 
+                              ? 'bg-slate-100 text-slate-800 rounded-tr-none' 
+                              : 'bg-deepNavy text-white rounded-tl-none'
+                          }`}>
+                            <div className="break-all leading-tight">
+                              {msg.content}
+                            </div>
+                            <div className={`text-[9px] mt-1 opacity-60 font-bold flex items-center gap-1.5 ${isMe ? 'text-slate-500 justify-end' : 'text-white/80 justify-start'}`}>
+                                {formatTime(msg.createdAt)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                );
-              })
+                    </motion.div>
+                  );
+                })}
+                <div ref={messagesEndRef} className="h-4 w-full flex-shrink-0" />
+              </>
             )}
           </motion.div>
         )}
