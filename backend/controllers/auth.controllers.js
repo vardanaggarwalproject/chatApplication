@@ -8,12 +8,12 @@ import crypto from "crypto";
 // Sign Up
 export const signUp = async (req, res) => {
   try {
-    const { userName, email, password, name } = req.body;
+    const { email, password, name } = req.body;
 
     // Validate input
-    if (!userName || !email || !password || !name) {
+    if (!email || !password || !name) {
       return res.status(400).json({ 
-        message: "Name, Username, email, and password are required" 
+        message: "Name, email, and password are required" 
       });
     }
 
@@ -27,9 +27,7 @@ export const signUp = async (req, res) => {
       return res.status(400).json({ message: "Name must be between 2 and 20 characters long" });
     }
 
-    if (userName.trim().length < 3 || userName.trim().length > 20) {
-      return res.status(400).json({ message: "Username must be between 3 and 20 characters long" });
-    }
+
 
     // Check if user already exists
     const [existingUser] = await db
@@ -52,10 +50,9 @@ export const signUp = async (req, res) => {
       .insert(usersTable)
       .values({
         id: userId,
-        userName,
         email,
         password: hashedPassword,
-        name: name || userName,
+        name: name,
         isOnline: false,
       })
       .returning();

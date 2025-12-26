@@ -5,7 +5,7 @@ import ChatSidebar from '../components/chat/Sidebar/ChatSidebar';
 import MessageAreaContainer from '../components/chat/MessageArea/MessageAreaContainer';
 import ModalsContainer from '../components/chat/Modals/ModalsContainer';
 import { useTabSynchronization } from '../hooks/useTabSynchronization';
-import { useProfileSync } from '../hooks/useProfileSync';
+
 import { useOnlineStatusManager } from '../hooks/useOnlineStatusManager';
 
 const ChatLayout = () => {
@@ -22,7 +22,7 @@ const ChatLayout = () => {
     // Initialize tab sync (logout across tabs)
     useTabSynchronization();
     // Initialize profile synchronization
-    useProfileSync(setUsers, setSelectedUser, currentUser);
+
     // Initialize online status manager
     useOnlineStatusManager(currentUser?.id, currentUser);
 

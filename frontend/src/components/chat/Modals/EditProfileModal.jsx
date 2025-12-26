@@ -20,7 +20,7 @@ const getInitials = (name) => {
 
 const EditProfileModal = ({ isOpen, onClose }) => {
   const { currentUser, setCurrentUser } = useChat();
-  const [name, setName] = useState(currentUser?.name || currentUser?.userName || "");
+  const [name, setName] = useState(currentUser?.name || "");
   const [email, setEmail] = useState(currentUser?.email || "");
   const [image, setImage] = useState(currentUser?.image || "");
   const [loading, setLoading] = useState(false);
@@ -69,7 +69,7 @@ const EditProfileModal = ({ isOpen, onClose }) => {
             <div className="relative group">
               <Avatar className="w-24 h-24 border-4 border-slate-100 shadow-xl">
                 <AvatarImage src={image} />
-                <AvatarFallback className="text-2xl">{getInitials(currentUser?.name || currentUser?.userName)}</AvatarFallback>
+                <AvatarFallback className="text-2xl">{getInitials(currentUser?.name)}</AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                 <Camera className="w-8 h-8 text-white" />
@@ -80,7 +80,7 @@ const EditProfileModal = ({ isOpen, onClose }) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="ename">Display Name</Label>
-              <Input id="ename" value={name} onChange={e => setName(e.target.value)} maxLength={20} />
+              <Input id="ename" value={name} onChange={e => setName(e.target.value)} maxLength={20} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="eemail">Email Address</Label>

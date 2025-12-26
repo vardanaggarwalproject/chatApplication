@@ -27,11 +27,10 @@ const GroupMembersModal = ({ isOpen, onClose, group }) => {
   const enrichedMembers = useMemo(() => {
     return members.map(member => {
       // If it's the current user, use their global profile data
-      if (currentUser && String(member.id) === String(currentUser.id)) {
+      if (currentUser && String(member.id).toLowerCase() === String(currentUser.id).toLowerCase()) {
         return {
           ...member,
           name: currentUser.name,
-          userName: currentUser.userName,
           image: currentUser.image,
           email: currentUser.email,
           isOnline: true
@@ -39,12 +38,11 @@ const GroupMembersModal = ({ isOpen, onClose, group }) => {
       }
 
       // Look up other users in the allUsers context
-      const globalUser = allUsers.find(u => String(u.id) === String(member.id));
+      const globalUser = allUsers.find(u => String(u.id).toLowerCase() === String(member.id).toLowerCase());
       if (globalUser) {
         return {
           ...member,
           name: globalUser.name,
-          userName: globalUser.userName,
           image: globalUser.image,
           email: globalUser.email,
           isOnline: globalUser.isOnline
@@ -124,7 +122,7 @@ const GroupMembersModal = ({ isOpen, onClose, group }) => {
   };
 
   // Check if current user is admin (role === "admin")
-  const currentUserMember = members.find(m => m.id === currentUser.id);
+  const currentUserMember = members.find(m => String(m.id).toLowerCase() === String(currentUser.id).toLowerCase());
   const isAdmin = currentUserMember?.role === "admin";
   const isCreator = group.createdBy === currentUser.id;
 
@@ -153,7 +151,7 @@ const GroupMembersModal = ({ isOpen, onClose, group }) => {
                     <Avatar className="w-10 h-10 border shadow-sm">
                       <AvatarImage src={member.image} />
                       <AvatarFallback className="text-white bg-slate-400 font-semibold text-xs sm:text-sm">
-                        {getInitials(member.name || member.userName)}
+                        {getInitials(member.name)}
                       </AvatarFallback>
                     </Avatar>
                     {member.isOnline && (
@@ -162,7 +160,7 @@ const GroupMembersModal = ({ isOpen, onClose, group }) => {
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <p className="font-semibold text-slate-800 text-xs sm:text-sm truncate">
-                      {member.name || member.userName}
+                      {member.name}
                     </p>
                     <p className="text-xs text-slate-500 truncate">
                       {member.email}

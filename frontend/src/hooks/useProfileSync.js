@@ -39,7 +39,7 @@ export const useProfileSync = (setUsers, setSelectedUser, currentUser) => {
     const handleProfileUpdate = (data) => {
       console.log("🔄 [PROFILE UPDATE] Received profile update event");
       console.log(`   Updated user ID: ${data.userId}`);
-      console.log(`   Updated user name: ${data.user.name || data.user.userName}`);
+      console.log(`   Updated user name: ${data.user.name}`);
       console.log(`   Current user ID: ${currentUserRef.current?.id}`);
       console.log(`   Event data:`, data);
 
@@ -66,7 +66,7 @@ export const useProfileSync = (setUsers, setSelectedUser, currentUser) => {
       } else {
         // It's another user's profile that was updated
         console.log(
-          `👥 Profile update is for OTHER USER (${data.user.userName}) - updating users list`
+          `👥 Profile update is for OTHER USER (${data.user.name}) - updating users list`
         );
 
         // Update the user in the users list

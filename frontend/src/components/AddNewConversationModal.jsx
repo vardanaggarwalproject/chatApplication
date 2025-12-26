@@ -66,7 +66,7 @@ const AddNewConversationModal = ({
   }, [debouncedSearchQuery, availableUsers]);
 
   const handleUserSelect = (user) => {
-    console.log("📝 [ADD CONVERSATION] User selected:", user.name || user.userName);
+    console.log("📝 [ADD CONVERSATION] User selected:", user.name);
     onUserSelect(user);
     setSearchQuery(""); // Clear search
     onOpenChange(false); // Close modal
@@ -149,7 +149,7 @@ const AddNewConversationModal = ({
                         alt="User Avatar"
                       />
                       <AvatarFallback className="bg-slate-100 text-slate-500 font-semibold text-xs sm:text-sm">
-                        {getInitials(user.name || user.userName)}
+                        {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
                     {user.isOnline && (
@@ -160,7 +160,7 @@ const AddNewConversationModal = ({
                   {/* User Info */}
                   <div className="flex-1 text-left min-w-0">
                     <p className="font-semibold text-slate-800 text-xs sm:text-sm truncate">
-                      {user.name || user.userName}
+                      {user.name}
                     </p>
                     <p className="text-xs text-slate-500 truncate line-clamp-1">
                       {user.email}

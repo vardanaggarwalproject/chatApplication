@@ -29,7 +29,10 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
   const [search, setSearch] = useState("");
 
   const toggleMember = (id) => {
-    setSelectedMembers(prev => prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]);
+    const standardizedId = String(id).toLowerCase();
+    setSelectedMembers(prev => prev.some(mid => mid.toLowerCase() === standardizedId) 
+      ? prev.filter(mid => mid.toLowerCase() !== standardizedId) 
+      : [...prev, standardizedId]);
   };
 
   const handleCreate = async () => {
@@ -69,8 +72,8 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
   };
 
   const filteredUsers = allUsers.filter(u => 
-    u.userName?.toLowerCase().includes(search.toLowerCase()) || 
-    u.name?.toLowerCase().includes(search.toLowerCase())
+    u.name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -105,15 +108,15 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={user.image} />
                       <AvatarFallback className="bg-slate-100 text-slate-500 text-[10px] font-bold">
-                        {getInitials(user.name || user.userName)}
+                        {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
                     {user.isOnline && (
                       <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full shadow-sm" />
                     )}
                   </div>
-                  <span className="flex-1 text-sm font-medium">{user.name || user.userName}</span>
-                  {selectedMembers.includes(user.id) && <Check className="w-4 h-4 text" />}
+                  <span className="flex-1 text-sm font-medium">{user.name}</span>
+                  {selectedMembers.some(mid => mid.toLowerCase() === String(user.id).toLowerCase()) && <Check className="w-4 h-4 text" />}
                 </div>
               ))}
             </div>

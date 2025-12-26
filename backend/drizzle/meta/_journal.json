@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1765435729211,
-      "tag": "0000_jittery_silverclaw",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1766508187719,
-      "tag": "0001_illegal_solo",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1766738367349,
-      "tag": "0002_fat_hobgoblin",
+      "when": 1766744086926,
+      "tag": "0000_careful_dexter_bennett",
       "breakpoints": true
     }
   ]

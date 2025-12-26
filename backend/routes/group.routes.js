@@ -208,8 +208,7 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
           m."created_at", 
           m."sender_id", 
           m."group_id",
-          u."name" as "senderName", 
-          u."user_name" as "senderUserName"
+          u."name" as "senderName"
         FROM ${messagesTable} m
         JOIN ${usersTable} u ON m."sender_id" = u."id"
         WHERE ${inArray(sql`m."group_id"`, groupIds)}
@@ -237,7 +236,6 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
           createdAt,
           senderId: msg.sender_id,
           senderName: msg.senderName, // Aliased in SQL
-          senderUserName: msg.senderUserName, // Aliased in SQL
         });
       });
     }
@@ -287,7 +285,6 @@ router.get("/:groupId", authenticateUser, async (req, res) => {
         id: usersTable.id,
         name: usersTable.name,
         email: usersTable.email,
-        userName: usersTable.userName,
         role: groupMembersTable.role,
         joinedAt: groupMembersTable.joinedAt,
       })
@@ -332,7 +329,6 @@ router.get("/:groupId/messages", authenticateUser, async (req, res) => {
         isEdited: messagesTable.isEdited,
         senderId: messagesTable.senderId,
         senderName: usersTable.name,
-        senderUserName: usersTable.userName,
         senderEmail: usersTable.email,
       })
       .from(messagesTable)

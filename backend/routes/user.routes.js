@@ -33,13 +33,13 @@ userRouter.put("/update", isAuth, async (req, res) => {
       const updatedUser = res.locals.updatedUser;
 
       console.log(`   ✅ Profile updated in database`);
-      console.log(`   New name: ${updatedUser.name || updatedUser.userName}`);
+      console.log(`   New name: ${updatedUser.name}`);
       console.log(`   New email: ${updatedUser.email}`);
 
       // Broadcast to ALL connected clients (including other browser windows/tabs)
       // Use io.emit() to send to all connected sockets across all rooms
       console.log(`\n📢 [BROADCAST] Sending profile_updated event to ALL clients`);
-      console.log(`   Updated user: ${updatedUser.userName}`);
+      console.log(`   Updated user: ${updatedUser.name}`);
       console.log(`   User ID: ${updatedUser.id}`);
 
       req.io.emit("profile_updated", {

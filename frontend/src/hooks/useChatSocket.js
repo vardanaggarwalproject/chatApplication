@@ -59,20 +59,28 @@ export const useChatSocket = () => {
             }
         };
 
-        const onUserStatusChange = ({ userId, isOnline }) => {
-            const update = u => String(u.id) === String(userId) ? { ...u, isOnline } : u;
+        const onUserStatusChange = (data) => {
+            if (!data || !data.userId) return;
+            const userId = String(data.userId).toLowerCase();
+            const isOnline = !!data.isOnline;
+            
+            const update = u => String(u.id).toLowerCase() === userId ? { ...u, isOnline } : u;
             setUsers(prev => prev.map(update));
             setAllUsers(prev => prev.map(update));
-            if (selectedUserRef.current && String(selectedUserRef.current.id) === String(userId)) {
-                setSelectedUser(prev => prev ? { ...prev, isOnline } : null);
-            }
+            
+            setSelectedUser(prev => {
+                if (prev && String(prev.id).toLowerCase() === userId) {
+                    return { ...prev, isOnline };
+                }
+                return prev;
+            });
         };
 
         const onReceiveDirectMessage = (messageData) => {
             if (!messageData) return;
-            const isSenderMe = String(currentUserRef.current?.id) === String(messageData.senderId);
-            const chatId = isSenderMe ? String(messageData.receiverId) : String(messageData.senderId);
-            const isCurrentlySelected = selectedUserRef.current && String(selectedUserRef.current.id) === chatId;
+            const isSenderMe = String(currentUserRef.current?.id).toLowerCase() === String(messageData.senderId).toLowerCase();
+            const chatId = isSenderMe ? String(messageData.receiverId).toLowerCase() : String(messageData.senderId).toLowerCase();
+            const isCurrentlySelected = selectedUserRef.current && String(selectedUserRef.current.id).toLowerCase() === chatId;
 
             console.log(`📨 [DIRECT_MSG] Received for ${chatId}. Active? ${isCurrentlySelected}`, messageData);
 
@@ -88,32 +96,31 @@ export const useChatSocket = () => {
             });
 
             setUsers(prev => {
-                const exists = prev.find(u => String(u.id) === chatId);
+                const exists = prev.find(u => String(u.id).toLowerCase() === chatId);
                 let updatedList;
                 if (!exists && !isSenderMe) {
                     const newUser = {
-                        id: messageData.senderId,
-                        userName: messageData.senderUserName || "Unknown",
+                        id: String(messageData.senderId).toLowerCase(),
                         name: messageData.senderName || "Unknown User",
                         hasChat: true,
                         unreadCount: isCurrentlySelected ? 0 : 1,
                         lastMessage: { 
                             content: messageData.content, 
                             createdAt: messageData.createdAt || messageData.created_at || new Date().toISOString(), 
-                            senderId: messageData.senderId 
+                            senderId: String(messageData.senderId).toLowerCase()
                         }
                     };
                     updatedList = [newUser, ...prev];
                 } else {
                     updatedList = prev.map(u => {
-                        if (String(u.id) === chatId) {
+                        if (String(u.id).toLowerCase() === chatId) {
                             return {
                                 ...u,
                                 hasChat: true,
                                 lastMessage: { 
                                     content: messageData.content, 
                                     createdAt: messageData.createdAt || messageData.created_at || new Date().toISOString(), 
-                                    senderId: messageData.senderId 
+                                    senderId: String(messageData.senderId).toLowerCase()
                                 },
                                 unreadCount: (isCurrentlySelected || isSenderMe) ? 0 : (u.unreadCount || 0) + 1
                             };
@@ -132,10 +139,10 @@ export const useChatSocket = () => {
 
         const onReceiveGroupMessage = (messageData) => {
             if (!messageData) return;
-            const targetGroupId = String(messageData.groupId || messageData.group_id);
+            const targetGroupId = String(messageData.groupId || messageData.group_id).toLowerCase();
             const isActiveGroup = selectedGroupRef.current && 
                                 !selectedUserRef.current && 
-                                String(targetGroupId) === String(selectedGroupRef.current.id);
+                                String(targetGroupId) === String(selectedGroupRef.current.id).toLowerCase();
 
             console.log(`📨 [GROUP_MSG] Received for ${targetGroupId}. Active? ${isActiveGroup}`, messageData);
 
@@ -148,8 +155,8 @@ export const useChatSocket = () => {
 
             setGroups(prev => {
                 const newGroups = prev.map(g => {
-                    if (String(g.id) === targetGroupId) {
-                        const isDifferentUser = String(messageData.senderId) !== String(currentUserRef.current?.id);
+                    if (String(g.id).toLowerCase() === targetGroupId) {
+                        const isDifferentUser = String(messageData.senderId).toLowerCase() !== String(currentUserRef.current?.id).toLowerCase();
                         const shouldIncrementUnread = !isActiveGroup && isDifferentUser;
                         
                         console.log(`   ✅ Updating sidebar for group ${g.name} (${targetGroupId})`);
@@ -159,7 +166,9 @@ export const useChatSocket = () => {
                             lastMessage: { 
                                 content: messageData.content, 
                                 createdAt: messageData.createdAt || messageData.created_at || new Date().toISOString(), 
-                                senderName: messageData.senderName || messageData.senderUserName || "User"
+                                senderId: String(messageData.senderId).toLowerCase(),
+                                senderName: messageData.senderName || "User",
+                                senderImage: messageData.senderImage
                             },
                             unreadCount: shouldIncrementUnread ? (g.unreadCount || 0) + 1 : (isActiveGroup ? 0 : g.unreadCount)
                         };
@@ -190,7 +199,7 @@ export const useChatSocket = () => {
                 });
                 setGroups(prev => {
                     const newGroups = prev.map(g => {
-                        if (String(g.id) === gid) {
+                        if (String(g.id).toLowerCase() === gid.toLowerCase()) {
                             return {
                                 ...g,
                                 unreadCount: 0, // It's my own message
@@ -198,7 +207,8 @@ export const useChatSocket = () => {
                                     content: messageData.content, 
                                     createdAt: messageData.createdAt || messageData.created_at || new Date().toISOString(), 
                                     senderName: "Me",
-                                    senderId: messageData.senderId
+                                    senderId: String(messageData.senderId).toLowerCase(),
+                                    senderImage: messageData.senderImage
                                 }
                             };
                         }
@@ -222,13 +232,13 @@ export const useChatSocket = () => {
                 // Update sidebar users for direct message sent
                 setUsers(prev => {
                     const updatedUsers = prev.map(u => {
-                        if (String(u.id) === chatId) {
+                        if (String(u.id).toLowerCase() === chatId) {
                             return {
                                 ...u,
                                 lastMessage: { 
                                     content: messageData.content, 
                                     createdAt: messageData.createdAt || messageData.created_at || new Date().toISOString(), 
-                                    senderId: messageData.senderId 
+                                    senderId: String(messageData.senderId).toLowerCase()
                                 },
                                 unreadCount: 0
                             };
@@ -252,31 +262,37 @@ export const useChatSocket = () => {
 
         const onGroupMemberAdded = (data) => {
             if (!data || !data.userId || !data.groupId) return;
-            if (String(data.userId) === String(currentUserRef.current?.id)) {
+            const userId = String(data.userId).toLowerCase();
+            const groupId = String(data.groupId).toLowerCase();
+            if (userId === String(currentUserRef.current?.id).toLowerCase()) {
                 fetchGroups(currentUserRef.current);
-                socket.emit("join_group", { groupId: data.groupId });
+                socket.emit("join_group", { groupId });
             }
         };
 
         const onProfileUpdated = (data) => {
-            if (!data || !data.userId || !data.updates) return;
-            const { userId, updates } = data;
+            if (!data || !data.userId || !data.user) return;
+            const userId = String(data.userId).toLowerCase();
+            const updates = data.user;
             
-            const updateFn = u => String(u.id) === String(userId) ? { ...u, ...updates } : u;
+            const updateFn = u => String(u.id).toLowerCase() === userId ? { ...u, ...updates } : u;
             setUsers(prev => prev.map(updateFn));
             setAllUsers(prev => prev.map(updateFn));
 
-            if (selectedUserRef.current && String(selectedUserRef.current.id) === String(userId)) {
-                setSelectedUser(prev => prev ? { ...prev, ...updates } : null);
-            }
+            setSelectedUser(prev => {
+                if (prev && String(prev.id).toLowerCase() === userId) {
+                    return { ...prev, ...updates };
+                }
+                return prev;
+            });
 
-            if (String(currentUserRef.current?.id) === String(userId)) {
+            if (String(currentUserRef.current?.id).toLowerCase() === userId) {
                 const updatedUser = { ...currentUserRef.current, ...updates };
                 setCurrentUser(updatedUser);
                 localStorage.setItem("user", JSON.stringify(updatedUser));
             }
 
-            const updateMessageFn = m => String(m.senderId) === String(userId) ? { 
+            const updateMessageFn = m => String(m.senderId).toLowerCase() === userId ? { 
                 ...m, 
                 senderName: updates.name || m.senderName,
                 senderImage: updates.image || m.senderImage 
@@ -295,12 +311,13 @@ export const useChatSocket = () => {
             });
 
             setGroups(prev => prev.map(g => {
-                if (g.lastMessage && String(g.lastMessage.senderId) === String(userId)) {
+                if (g.lastMessage && String(g.lastMessage.senderId).toLowerCase() === userId) {
                     return {
                         ...g,
                         lastMessage: {
                             ...g.lastMessage,
-                            senderName: updates.name || g.lastMessage.senderName
+                            senderName: updates.name || g.lastMessage.senderName,
+                            senderImage: updates.image || g.lastMessage.senderImage
                         }
                     };
                 }
@@ -310,18 +327,19 @@ export const useChatSocket = () => {
 
         const onGroupMemberRemoved = (data) => {
             if (!data || !data.groupId || !data.userId) return;
-            const { groupId, userId, removedBy, reason } = data;
-            if (String(userId) === String(currentUserRef.current?.id)) {
-                setGroups(prev => prev.filter(g => String(g.id) !== String(groupId)));
+            const groupId = String(data.groupId).toLowerCase();
+            const userId = String(data.userId).toLowerCase();
+            if (userId === String(currentUserRef.current?.id).toLowerCase()) {
+                setGroups(prev => prev.filter(g => String(g.id).toLowerCase() !== groupId));
                 setGroupMessages(prev => {
                     const newMessages = { ...prev };
                     delete newMessages[groupId];
                     return newMessages;
                 });
-                if (selectedGroupRef.current && String(selectedGroupRef.current.id) === String(groupId)) {
+                if (selectedGroupRef.current && String(selectedGroupRef.current.id).toLowerCase() === groupId) {
                     setSelectedGroup(null);
                 }
-                const reasonText = reason === 'exit' ? 'left the group' : 'were removed from the group';
+                const reasonText = data.reason === 'exit' ? 'left the group' : 'were removed from the group';
                 alert(`You ${reasonText}: ${selectedGroupRef.current?.name || 'Group'}`);
             } else {
                 fetchGroups(currentUserRef.current);
@@ -329,25 +347,39 @@ export const useChatSocket = () => {
         };
 
         const onUserCreated = (data) => {
-            const { user } = data;
-            if (String(user.id) !== String(currentUserRef.current?.id)) {
+            if (!data || !data.user) return;
+            const newUser = data.user;
+            const newUserId = String(newUser.id).toLowerCase();
+            if (newUserId !== String(currentUserRef.current?.id).toLowerCase()) {
                 setAllUsers(prev => {
-                    const exists = prev.find(u => String(u.id) === String(user.id));
+                    const exists = prev.find(u => String(u.id).toLowerCase() === newUserId);
                     if (exists) return prev;
-                    return [...prev, user];
+                    return [...prev, { ...newUser, id: newUserId }];
                 });
             }
         };
 
         const onUserOnline = (user) => {
-            if (String(user.id) === String(currentUserRef.current?.id)) return;
-            const onlineUpdate = u => String(u.id) === String(user.id) ? { ...u, ...user, isOnline: true } : u;
+            if (!user || !user.id) return;
+            const userId = String(user.id).toLowerCase();
+            if (userId === String(currentUserRef.current?.id).toLowerCase()) return;
+            
+            const onlineUpdate = u => String(u.id).toLowerCase() === userId ? { ...u, ...user, isOnline: true } : u;
+            
             setAllUsers(prev => {
-                const exists = prev.find(u => String(u.id) === String(user.id));
+                const exists = prev.find(u => String(u.id).toLowerCase() === userId);
                 if (exists) return prev.map(onlineUpdate);
-                return [...prev, { ...user, isOnline: true }];
+                return [{ ...user, isOnline: true }, ...prev];
             });
+            
             setUsers(prev => prev.map(onlineUpdate));
+
+            setSelectedUser(prev => {
+                if (prev && String(prev.id).toLowerCase() === userId) {
+                    return { ...prev, ...user, isOnline: true };
+                }
+                return prev;
+            });
         };
 
         socket.on("connect", onConnect);

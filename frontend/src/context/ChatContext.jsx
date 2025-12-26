@@ -49,7 +49,10 @@ export const ChatProvider = ({ children }) => {
     try {
       setLoadingUsers(true);
       const response = await axiosInstance.get(`/api/user/all`);
-      let otherUsers = response.data.users.filter(u => String(u.id) !== String(activeUser.id));
+      const currentId = String(activeUser.id).toLowerCase();
+      let otherUsers = response.data.users
+        .map(u => ({ ...u, id: String(u.id).toLowerCase() }))
+        .filter(u => u.id !== currentId);
       const usersToShow = otherUsers.filter(u => u.hasChat || u.addedForChat);
       setUsers(usersToShow);
       setAllUsers(otherUsers);
@@ -68,9 +71,9 @@ export const ChatProvider = ({ children }) => {
       const response = await axiosInstance.get(`/api/groups/my-groups`);
       const groupsData = response.data.groups || [];
       if (socket && socket.connected) {
-        groupsData.forEach(group => socket.emit("join_group", { groupId: group.id }));
+        groupsData.forEach(group => socket.emit("join_group", { groupId: String(group.id).toLowerCase() }));
       }
-      setGroups(groupsData);
+      setGroups(groupsData.map(g => ({ ...g, id: String(g.id).toLowerCase() })));
     } catch (error) {
       console.error("❌ Error fetching groups:", error);
     } finally {
@@ -180,7 +183,6 @@ export const ChatProvider = ({ children }) => {
     if (!searchQuery.trim()) return users;
     const q = searchQuery.toLowerCase();
     return users.filter(u => 
-      u.userName?.toLowerCase().includes(q) || 
       u.name?.toLowerCase().includes(q)
     );
   }, [users, searchQuery]);
@@ -230,8 +232,7 @@ export const ChatProvider = ({ children }) => {
         senderId: currentUser.id,
         content: messageContent,
         createdAt: new Date().toISOString(),
-        senderName: currentUser.name || currentUser.userName,
-        senderUserName: currentUser.userName,
+        senderName: currentUser.name || "You",
       };
       setGroupMessages(prev => ({
         ...prev,
@@ -268,8 +269,7 @@ export const ChatProvider = ({ children }) => {
         receiverId: selectedUser.id,
         content: messageContent,
         createdAt: new Date().toISOString(),
-        senderName: currentUser.name || currentUser.userName,
-        senderUserName: currentUser.userName,
+        senderName: currentUser.name || "You",
       };
       setDirectMessages(prev => ({
         ...prev,
@@ -277,7 +277,7 @@ export const ChatProvider = ({ children }) => {
       }));
       
       // Optimistic sidebar update for direct message sender
-      setUsers(prev => prev.map(u => String(u.id) === String(selectedUser.id) ? {
+      setUsers(prev => prev.map(u => String(u.id).toLowerCase() === String(selectedUser.id).toLowerCase() ? {
         ...u,
         hasChat: true,
         lastMessage: { content: messageContent, createdAt: tempMessage.createdAt, senderId: String(currentUser.id) }

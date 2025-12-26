@@ -10,7 +10,6 @@ export const getCurrentUser = async (req, res) => {
       .select({
         id: usersTable.id,
         name: usersTable.name,
-        userName: usersTable.userName,
         email: usersTable.email,
         image: usersTable.image,
         isOnline: usersTable.isOnline,
@@ -38,7 +37,8 @@ export const getCurrentUser = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const currentUserId = req.userId;
+    const currentUserIdRaw = req.userId;
+    const currentUserId = String(currentUserIdRaw).toLowerCase();
     const activeUsers = req.activeUsers;
 
     console.log(`\n🔍 [GET_ALL_USERS] Starting optimized fetch for User: ${currentUserId}`);
@@ -49,14 +49,13 @@ export const getAllUsers = async (req, res) => {
       .select({
         id: usersTable.id,
         name: usersTable.name,
-        userName: usersTable.userName,
         email: usersTable.email,
         image: usersTable.image,
         isOnline: usersTable.isOnline,
         lastSeen: usersTable.lastSeen,
       })
       .from(usersTable)
-      .where(ne(usersTable.id, currentUserId));
+      .where(ne(sql`${usersTable.id}::text`, currentUserId));
 
     console.log(`   - Found ${users.length} other users in DB`);
 
@@ -93,7 +92,7 @@ export const getAllUsers = async (req, res) => {
       )
       .groupBy(messagesTable.senderId);
     
-    const unreadMap = new Map(unreadCounts.map(c => [String(c.senderId), c.count]));
+    const unreadMap = new Map(unreadCounts.map(c => [String(c.senderId).toLowerCase(), c.count]));
 
     // 4. Fetch ALL last messages for the current user in a SINGLE optimized query
     // Use DISTINCT ON to get the latest message per conversation
@@ -103,16 +102,16 @@ export const getAllUsers = async (req, res) => {
       FROM (
         SELECT *, 
           CASE 
-            WHEN "sender_id" = ${currentUserId} THEN "receiver_id" 
-            ELSE "sender_id" 
+            WHEN sender_id::text = ${currentUserId}::text THEN receiver_id 
+            ELSE sender_id 
           END as partner_id
         FROM ${messagesTable}
         WHERE (
-          "sender_id" = ${currentUserId} OR "receiver_id" = ${currentUserId}
+          sender_id::text = ${currentUserId}::text OR receiver_id::text = ${currentUserId}::text
         )
-        AND "group_id" IS NULL
+        AND group_id IS NULL
       ) as subquery
-      ORDER BY partner_id, "created_at" DESC
+      ORDER BY partner_id, created_at DESC
     `);
     
     // Create a map of conversationPartnerId -> message (mapped to camelCase)
@@ -125,7 +124,7 @@ export const getAllUsers = async (req, res) => {
         : [];
        
     rows.forEach(msg => {
-       const partnerId = String(msg.partner_id);
+       const partnerId = String(msg.partner_id).toLowerCase();
        
        // Standardize the timestamp to UTC ISO string
        let createdAt = null;
@@ -151,14 +150,14 @@ export const getAllUsers = async (req, res) => {
     });
 
     const usersWithMetadata = users.map((user) => {
-        const userIdStr = String(user.id);
+        const userIdStr = String(user.id).toLowerCase();
         const addedForChat = contactIds.has(userIdStr);
         const lastMessage = lastMessageMap.get(userIdStr) || null;
         const hasChat = !!lastMessage;
 
         return {
           ...user,
-          isOnline: activeUsers ? activeUsers.has(userIdStr) : user.isOnline,
+          isOnline: activeUsers ? activeUsers.has(userIdStr) : (user.isOnline || false),
           lastMessage: lastMessage,
           unreadCount: unreadMap.get(userIdStr) || 0,
           hasChat,
@@ -232,7 +231,10 @@ export const updateUserProfile = async (req, res) => {
     // Build update object with only provided fields
     const updateData = {};
     // Validate name if provided
-    if (name !== undefined && name.trim() !== "") {
+    if (name !== undefined) {
+      if (!name || name.trim() === "") {
+        return res.status(400).json({ message: "Name is required" });
+      }
       if (name.trim().length < 2 || name.trim().length > 20) {
         return res.status(400).json({ message: "Name must be between 2 and 20 characters long" });
       }
@@ -258,7 +260,6 @@ export const updateUserProfile = async (req, res) => {
       .select({
         id: usersTable.id,
         name: usersTable.name,
-        userName: usersTable.userName,
         email: usersTable.email,
         image: usersTable.image,
         isOnline: usersTable.isOnline,
@@ -271,7 +272,7 @@ export const updateUserProfile = async (req, res) => {
     // console.log(" Updated user data:", updatedUser);
 
     // Store updated user in response for middleware to broadcast
-    res.locals.updatedUser = updatedUser;
+    res.locals.updatedUser = { ...updatedUser, id: String(updatedUser.id).toLowerCase() };
 
     res.status(200).json({ message: "Profile updated successfully", user: updatedUser });
   } catch (error) {

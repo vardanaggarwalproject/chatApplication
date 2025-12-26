@@ -105,8 +105,9 @@ io.on('connection', async (socket) => {
   // console.log(`   Total active users before: ${activeUsers.size}`);
 
   // Store active user
-  activeUsers.set(userId, socket.id);
-  socketToUser.set(socket.id, userId);
+  const standardizedUserId = String(userId).toLowerCase();
+  activeUsers.set(standardizedUserId, socket.id);
+  socketToUser.set(socket.id, standardizedUserId);
 
   // console.log(`   ✅ User registered in activeUsers map`);
   // console.log(`   Total active users after: ${activeUsers.size}`);
@@ -154,14 +155,13 @@ io.on('connection', async (socket) => {
     const [user] = await db
       .select({
         id: usersTable.id,
-        userName: usersTable.userName,
         name: usersTable.name,
         image: usersTable.image,
       })
       .from(usersTable)
       .where(eq(usersTable.id, userId));
 
-    socket.broadcast.emit("user_online", user);
+    socket.broadcast.emit("user_online", { ...user, id: standardizedUserId });
   } catch (error) {
     console.error("Error fetching user:", error);
   }
@@ -169,7 +169,7 @@ io.on('connection', async (socket) => {
   // NOW broadcast user online status AFTER joining all rooms
   // This ensures the user is ready to receive messages
   io.emit("user_status_change", {
-    userId,
+    userId: standardizedUserId,
     isOnline: true,
   });
 
@@ -256,7 +256,6 @@ io.on('connection', async (socket) => {
         .select({
           id: usersTable.id,
           name: usersTable.name,
-          userName: usersTable.userName,
           image: usersTable.image,
         })
         .from(usersTable)
@@ -265,7 +264,6 @@ io.on('connection', async (socket) => {
       const messageData = {
         ...savedMessage,
         senderName: sender.name,
-        senderUserName: sender.userName,
         senderImage: sender.image,
       };
 
@@ -358,7 +356,6 @@ io.on('connection', async (socket) => {
         .select({
           id: usersTable.id,
           name: usersTable.name,
-          userName: usersTable.userName,
           image: usersTable.image,
         })
         .from(usersTable)
@@ -367,7 +364,6 @@ io.on('connection', async (socket) => {
       const messageData = {
         ...savedMessage,
         senderName: sender.name,
-        senderUserName: sender.userName,
         senderImage: sender.image,
       };
 
@@ -474,7 +470,8 @@ io.on('connection', async (socket) => {
       const otherActiveSockets = remainingSockets.filter(s => s.id !== socket.id);
 
       if (otherActiveSockets.length === 0) {
-        activeUsers.delete(userId);
+        const standardizedId = String(userId).toLowerCase();
+        activeUsers.delete(standardizedId);
         console.log(`   ✅ User removed from activeUsers map (no more sessions)`);
 
         // Update user offline status in database
@@ -491,7 +488,7 @@ io.on('connection', async (socket) => {
 
         // Broadcast user offline status to all clients
         io.emit("user_status_change", {
-          userId: userId,
+          userId: String(userId).toLowerCase(),
           isOnline: false,
         });
 
@@ -535,7 +532,8 @@ io.on('connection', async (socket) => {
     console.log(`   Remaining sockets for user ${userId}: ${remainingSockets.length}`);
 
     if (remainingSockets.length === 0) {
-      activeUsers.delete(userId);
+      const standardizedId = String(userId).toLowerCase();
+      activeUsers.delete(standardizedId);
       console.log(`   ✅ User ${userId} has no more active sessions. Marking OFFLINE.`);
       
       // Update user offline status in database
@@ -552,7 +550,7 @@ io.on('connection', async (socket) => {
 
       // Broadcast user offline status
       io.emit("user_status_change", {
-        userId,
+        userId: String(userId).toLowerCase(),
         isOnline: false,
       });
 

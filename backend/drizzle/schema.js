@@ -11,8 +11,7 @@ import { relations } from "drizzle-orm";
 // Users table
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: varchar("name", { length: 20 }),
-  userName: varchar("user_name", { length: 20 }).notNull(),
+  name: varchar("name", { length: 20 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
   image: text("image").default(""),

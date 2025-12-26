@@ -57,7 +57,7 @@ export default function ChatPage() {
         socket.emit("join_group", {
           groupId: roomId,
           userId: user._id,
-          username: user.userName || user.email,
+          username: user.email,
         });
 
         setLoading(false);
@@ -145,7 +145,7 @@ export default function ChatPage() {
     const msgData = {
       groupId: roomId,
       userId: currentUser._id || currentUser.id,
-      username: currentUser.userName || currentUser.email,
+      username: currentUser.email,
       content: message.trim(),
     };
 
@@ -160,8 +160,8 @@ export default function ChatPage() {
       groupId: roomId,
       content: message.trim(),
       createdAt: new Date().toISOString(),
-      senderName: currentUser.name || currentUser.userName,
-      senderUserName: currentUser.userName || currentUser.email,
+      senderName: currentUser.name,
+      senderEmail: currentUser.email,
     };
     setChat((prev) => [...prev, tempMessage]);
     setMessage("");
@@ -169,7 +169,7 @@ export default function ChatPage() {
     // Stop typing indicator
     socket.emit("stop_typing", {
       groupId: roomId,
-      username: currentUser.userName || currentUser.email,
+      username: currentUser.email,
     });
   };
 
@@ -186,14 +186,14 @@ export default function ChatPage() {
     // Emit typing event
     socket.emit("typing", {
       groupId: roomId,
-      username: currentUser.userName || currentUser.email,
+      username: currentUser.email,
     });
 
     // Stop typing after 2 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("stop_typing", {
         groupId: roomId,
-        username: currentUser.userName || currentUser.email,
+        username: currentUser.email,
       });
     }, 2000);
   };
@@ -267,10 +267,7 @@ export default function ChatPage() {
                           isOwnMessage ? "text-cyan-100" : "text-slate-600"
                         }`}
                       >
-                        {msg.senderName ||
-                          msg.senderUserName ||
-                          msg.username ||
-                          "Unknown"}
+                        {msg.senderName || "Unknown"}
                       </p>
                     )}
                     <p className="break-words">{msg.content}</p>
@@ -348,7 +345,7 @@ export default function ChatPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">
-                    {member.name || member.userName}
+                    {member.name}
                   </p>
                   <p className="text-xs text-slate-500 capitalize">
                     {member.role}

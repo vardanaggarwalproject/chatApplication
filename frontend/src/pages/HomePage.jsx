@@ -282,11 +282,11 @@ const HomePage = () => {
                       >
                         <AvatarImage
                           src={userDetails?.image}
-                          alt={userDetails?.fullName}
+                          alt={userDetails?.name}
                           // onClick={navigate("/chat")}
                         />
                         <AvatarFallback className="bg-gradient-to-br from-primaryColor to-secondaryColor text-slate-800 font-semibold text-sm">
-                          {userDetails?.fullName?.charAt(0).toUpperCase()}
+                          {userDetails?.name?.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div
@@ -294,7 +294,7 @@ const HomePage = () => {
                           isScrolled ? "text-sm" : ""
                         }`}
                       >
-                        {userDetails?.fullName}
+                        {userDetails?.name}
                       </div>
                       <div className="chatAreaBtn">
                         <DropdownMenu>
@@ -369,16 +369,16 @@ const HomePage = () => {
                               <Avatar className="w-[50px] h-[50px] border border-slate-200">
                                 <AvatarImage
                                   src={userDetails?.avatar}
-                                  alt={userDetails?.fullName}
+                                  alt={userDetails?.name}
                                 />
                                 <AvatarFallback className="bg-gradient-to-br from-primaryColor to-secondaryColor text-slate-800 font-semibold">
-                                  {userDetails?.fullName
+                                  {userDetails?.name
                                     ?.charAt(0)
                                     .toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="userName text-slate-800 font-medium">
-                                {userDetails?.fullName}
+                                {userDetails?.name}
                               </div>
                             </div>
                           </div>

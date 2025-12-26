@@ -14,7 +14,7 @@ authRouter.post("/signup", async (req, res) => {
       const newUser = res.locals.newUser;
       
       console.log(`\n📢 [BROADCAST] Sending user_created event to ALL clients`);
-      console.log(`   New user: ${newUser.userName}`);
+      console.log(`   New user: ${newUser.name}`);
       console.log(`   User ID: ${newUser.id}`);
 
       req.io.emit("user_created", {

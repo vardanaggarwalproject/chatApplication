@@ -15,7 +15,6 @@ const SignUp = () => {
   const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const [name, setName] = useState("");
-  const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,12 +28,6 @@ const SignUp = () => {
     // Basic validation
     if (name.trim().length < 2 || name.trim().length > 20) {
       toast.error("Invalid Name", { description: "Name must be between 2 and 20 characters long." });
-      setLoading(false);
-      return;
-    }
-
-    if (userName.trim().length < 3 || userName.trim().length > 20) {
-      toast.error("Invalid Username", { description: "Username must be between 3 and 20 characters long." });
       setLoading(false);
       return;
     }
@@ -55,7 +48,6 @@ const SignUp = () => {
     try {
       const result = await axiosInstance.post(`/api/auth/signup`, {
         name: name.trim(),
-        userName: userName.trim(),
         email: email.trim(),
         password,
       });
@@ -67,7 +59,6 @@ const SignUp = () => {
       setName("");
       setEmail("");
       setPassword("");
-      setUserName("");
       setLoading(false);
 
       // Show success toast
@@ -129,37 +120,11 @@ const SignUp = () => {
           />
         </motion.div>
 
-        {/* Username Input */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          className="space-y-2"
-        >
-          <Label
-            htmlFor="username"
-            className="text-sm font-medium text-slate-700 flex items-center gap-2"
-          >
-            <UserPlus className="w-4 h-4 text-slate-500" />
-            Username
-          </Label>
-          <Input
-            id="username"
-            type="text"
-            placeholder="amelie"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            required
-            maxLength={20}
-            className="h-12 bg-white border border-slate-200 rounded-xl focus:border-primaryColor focus:ring-2 focus:ring-primaryColor/20 transition-all duration-300"
-          />
-        </motion.div>
-
         {/* Email Input */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.5 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
           className="space-y-2"
         >
           <Label
@@ -184,7 +149,7 @@ const SignUp = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.6 }}
+          transition={{ duration: 0.4, delay: 0.5 }}
           className="space-y-2"
         >
           <Label
@@ -238,7 +203,7 @@ const SignUp = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.7 }}
+          transition={{ duration: 0.4, delay: 0.6 }}
         >
           <Button
             type="submit"

@@ -108,13 +108,13 @@ const ChatSidebar = () => {
   }, [searchQuery]);
 
   const handleSelectUser = (user) => {
-    if (selectedUser?.id === user.id) return;
+    if (selectedUser?.id && String(selectedUser.id).toLowerCase() === String(user.id).toLowerCase()) return;
     setSelectedGroup(null);
     setSelectedUser(user);
   };
 
   const handleSelectGroup = (group) => {
-    if (selectedGroup?.id === group.id) return;
+    if (selectedGroup?.id && String(selectedGroup.id).toLowerCase() === String(group.id).toLowerCase()) return;
     setSelectedUser(null);
     setSelectedGroup(group);
   };
@@ -138,10 +138,10 @@ const ChatSidebar = () => {
             <div className="relative cursor-pointer group">
               <Avatar className="w-14 h-14 border-4 border-slate-50 group-hover:border-slate-100 transition-all shadow-md">
                 {currentUser?.image ? (
-                  <AvatarImage src={currentUser.image} alt={currentUser.userName} />
+                  <AvatarImage src={currentUser.image} alt={currentUser.name} />
                 ) : (
                   <AvatarFallback className="bg-gradient-to-br from-primaryColor to-secondaryColor text-slate-800 text-sm font-black">
-                    {currentUser?.userName?.substring(0, 2).toUpperCase()}
+                    {getInitials(currentUser?.name)}
                   </AvatarFallback>
                 )}
               </Avatar>
@@ -154,10 +154,10 @@ const ChatSidebar = () => {
               <div className="relative">
                 <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
                   {currentUser?.image ? (
-                    <AvatarImage src={currentUser.image} alt={currentUser.userName} />
+                    <AvatarImage src={currentUser.image} alt={currentUser.name} />
                   ) : (
                     <AvatarFallback className="bg-primaryColor/10 text-primaryColor font-bold">
-                       {getInitials(currentUser?.name || currentUser?.userName)}
+                       {getInitials(currentUser?.name)}
                     </AvatarFallback>
                   )}
                 </Avatar>
@@ -165,7 +165,7 @@ const ChatSidebar = () => {
               </div>
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-slate-900 truncate text-[14px]">{currentUser?.name || currentUser?.userName}</span>
+                  <span className="font-black text-slate-900 truncate text-[14px]">{currentUser?.name}</span>
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                 </div>
                 <span className="text-[11px] text-slate-400 font-bold truncate">{currentUser?.email || "No email provided"}</span>
@@ -264,22 +264,22 @@ const ChatSidebar = () => {
                 <button
                   key={user.id}
                   onClick={() => handleSelectUser(user)}
-                  className={`group relative flex items-center gap-3.5 px-3 py-3.5 rounded-2xl transition-all duration-300 ${selectedUser?.id === user.id ? 'bg-slate-50 shadow-sm' : 'hover:bg-slate-50/50'}`}
+                  className={`group relative flex items-center gap-3.5 px-3 py-3.5 rounded-2xl transition-all duration-300 ${String(selectedUser?.id).toLowerCase() === String(user.id).toLowerCase() ? 'bg-slate-50 shadow-sm' : 'hover:bg-slate-50/50'}`}
                 >
                   <div className="relative">
-                    <Avatar className={`w-[52px] h-[52px] border-2 shadow-sm transition-all duration-500 ${selectedUser?.id === user.id ? 'border-primaryColor' : 'border-white group-hover:border-slate-200'}`}>
+                    <Avatar className={`w-[52px] h-[52px] border-2 shadow-sm transition-all duration-500 ${String(selectedUser?.id).toLowerCase() === String(user.id).toLowerCase() ? 'border-primaryColor' : 'border-white group-hover:border-slate-200'}`}>
                       <AvatarImage src={user.image} />
-                      <AvatarFallback className="bg-slate-100 text-slate-400 font-black text-sm">{getInitials(user.name || user.userName)}</AvatarFallback>
+                      <AvatarFallback className="bg-slate-100 text-slate-400 font-black text-sm">{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
                     {user.isOnline && <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-lg" />}
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <div className="flex justify-between items-start mb-0.5">
-                      <span className={`font-black truncate text-[15px] ${selectedUser?.id === user.id ? 'text-slate-900' : 'text-slate-800'}`}>{user.name || user.userName}</span>
+                      <span className={`font-black truncate text-[15px] ${String(selectedUser?.id).toLowerCase() === String(user.id).toLowerCase() ? 'text-slate-900' : 'text-slate-800'}`}>{user.name}</span>
                       {user.lastMessage && <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap pt-1">{formatTimeAgo(user.lastMessage.createdAt)}</span>}
                     </div>
                     <div className="flex justify-between items-center gap-2">
-                      <p className={`text-[13px] truncate flex-1 font-medium ${selectedUser?.id === user.id ? 'text-slate-600' : 'text-slate-500'}`}>{user.lastMessage?.content || "Message this person..."}</p>
+                      <p className={`text-[13px] truncate flex-1 font-medium ${String(selectedUser?.id).toLowerCase() === String(user.id).toLowerCase() ? 'text-slate-600' : 'text-slate-500'}`}>{user.lastMessage?.content || "Message this person..."}</p>
                       {user.unreadCount > 0 && <div className="bg-primaryColor text-slate-800 text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-lg shadow-primaryColor/20 animate-in zoom-in-50 duration-300">{user.unreadCount}</div>}
                     </div>
                   </div>

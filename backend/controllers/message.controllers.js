@@ -24,7 +24,6 @@ export const getDirectMessages = async (req, res) => {
         isEdited: messagesTable.isEdited,
         isRead: messagesTable.isRead,
         senderName: usersTable.name,
-        senderUserName: usersTable.userName,
         senderImage: usersTable.image,
       })
       .from(messagesTable)
@@ -85,7 +84,6 @@ export const sendDirectMessage = async (req, res) => {
       .select({
         id: usersTable.id,
         name: usersTable.name,
-        userName: usersTable.userName,
         image: usersTable.image,
       })
       .from(usersTable)
@@ -94,7 +92,6 @@ export const sendDirectMessage = async (req, res) => {
     const messageData = {
       ...message,
       senderName: sender.name,
-      senderUserName: sender.userName,
       senderImage: sender.image,
     };
 
@@ -117,7 +114,6 @@ export const getConversations = async (req, res) => {
     const conversations = await db
       .selectDistinct({
         userId: usersTable.id,
-        userName: usersTable.userName,
         name: usersTable.name,
         email: usersTable.email,
         image: usersTable.image,

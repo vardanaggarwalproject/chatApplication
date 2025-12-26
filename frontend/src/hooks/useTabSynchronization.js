@@ -44,9 +44,7 @@ export const useTabSynchronization = () => {
         const newUser = JSON.parse(event.newValue);
 
         if (oldUser.id !== newUser.id) {
-          console.log(
-            `🔄 User switched from ${oldUser.userName} to ${newUser.userName} in another tab - syncing`
-          );
+            `🔄 User switched from ${oldUser.name} to ${newUser.name} in another tab - syncing`
           handleLoginSync(newUser);
         }
       }
@@ -78,7 +76,7 @@ export const useTabSynchronization = () => {
           console.log("❌ No user or token in localStorage - logging out");
           handleLogoutSync();
         } else {
-          console.log("✅ User still authenticated:", JSON.parse(user).userName);
+          console.log("✅ User still authenticated:", JSON.parse(user).name);
         }
       } catch (error) {
         console.error("Error verifying auth state:", error);
@@ -114,7 +112,7 @@ export const useTabSynchronization = () => {
      * Handle login synchronization across tabs
      */
     const handleLoginSync = (newUser) => {
-      console.log("✅ Syncing login across tabs:", newUser.userName);
+      console.log("✅ Syncing login across tabs:", newUser.name);
 
       // Update localStorage
       localStorage.setItem("user", JSON.stringify(newUser));
