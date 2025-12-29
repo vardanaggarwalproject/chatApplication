@@ -1,5 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import axiosInstance from '../utils/axiosConfig';
 import { ChatProvider, useChat } from '../context/ChatContext';
 import { useChatSocket } from '../hooks/useChatSocket';
 import ChatSidebar from '../components/chat/Sidebar/ChatSidebar';
@@ -44,10 +46,19 @@ const ChatLayout = () => {
                     // Try to find in allUsers (maybe hasn't been added to sidebar yet)
                     const userFromAll = allUsers.find(u => String(u.id).toLowerCase() === standardizedUserId);
                     if (userFromAll) {
-                        handleSelectNewUser(userFromAll);
+                        // If the user exists but is neither a contact nor has prior messages, redirect to /chat
+                        // This avoids showing partial header/CTA for users the current user has no relation with
+                        if (!userFromAll.addedForChat && !userFromAll.hasChat) {
+                            console.log(`🧭 [ROUTING] User ${standardizedUserId} is unknown (no chat/contact). Redirecting to /chat`);
+                            toast.error("Can't open chat", { description: "You don't have a conversation with this user yet." });
+                            navigate('/chat', { replace: true });
+                        } else {
+                            handleSelectNewUser(userFromAll);
+                        }
                     } else {
                         // User not found anywhere, redirect to chat home
                         console.warn(`User ${userId} not found, redirecting to /chat`);
+                        toast.error('User not found', { description: 'The requested user does not exist.' });
                         navigate('/chat', { replace: true });
                     }
                 }
@@ -62,9 +73,28 @@ const ChatLayout = () => {
                     setSelectedUser(null);
                     setSelectedGroup(group);
                 } else {
-                    // Group not found, redirect
-                    console.warn(`Group ${groupId} not found, redirecting to /chat`);
-                    navigate('/chat', { replace: true });
+                    // Group not found in user's groups - check if the group exists publicly
+                    console.warn(`Group ${groupId} not found in user's groups. Verifying existence...`);
+                    (async () => {
+                        try {
+                            const resp = await axiosInstance.get(`/api/groups/${encodeURIComponent(groupId)}/info`);
+                            const groupInfo = resp?.data?.group;
+                            if (groupInfo?.name) {
+                                toast.error(`You are not a member of the ${groupInfo.name} group`, { description: 'Membership is required to view this group.' });
+                            } else {
+                                toast.error('Group not found', { description: 'The requested group does not exist.' });
+                            }
+                        } catch (err) {
+                            if (err?.response?.status === 404) {
+                                toast.error('Group not found', { description: 'The requested group does not exist.' });
+                            } else {
+                                console.error('Error fetching group info:', err);
+                                toast.error('Cannot open group', { description: 'Unable to verify group membership at this time.' });
+                            }
+                        } finally {
+                            navigate('/chat', { replace: true });
+                        }
+                    })();
                 }
             }
         } else {

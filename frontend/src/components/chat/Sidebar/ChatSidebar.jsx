@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useChat } from '../../../context/ChatContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { blockIfLocked } from '@/lib/modalQueryGuard';
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Search, Plus, LogOut, Settings, UserPlus, Users, Hash, MessageSquare, User } from "lucide-react";
@@ -65,12 +66,13 @@ const getInitials = (name) => {
     .slice(0, 2);
 };
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useDebounce } from '../../../hooks/useDebounce';
 
 const ChatSidebar = () => {
   const navigate = useNavigate();
   const { userId, groupId } = useParams();
+  const location = useLocation();
   const {
     currentUser,
     filteredUsers,
@@ -79,32 +81,43 @@ const ChatSidebar = () => {
     setSearchQuery,
     selectedUser,
     selectedGroup,
-    setShowAddConversationModal,
-    setShowCreateGroup,
     setShowEditProfile,
     loadingUsers,
     loadingGroups,
+    fetchUsers,
+    fetchGroups,
   } = useChat();
 
   const [activeTab, setActiveTab] = useState("users");
 
-  // Sync activeTab with URL
+  // Sync activeTab with URL and create-group modal
   React.useEffect(() => {
-    if (groupId) {
+    const params = new URLSearchParams(location.search);
+    const modal = params.get('modal');
+
+    if (groupId || modal === 'create-group') {
       setActiveTab("groups");
     } else if (userId) {
       setActiveTab("users");
     }
-  }, [groupId, userId]);
+  }, [groupId, userId, location.search]);
   
   // Local state for debounced search
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const debouncedSearch = useDebounce(localSearch, 500);
 
-  // Sync debounced value to context
+  // Sync debounced value to context and call server search for active tab
   React.useEffect(() => {
     setSearchQuery(debouncedSearch);
-  }, [debouncedSearch, setSearchQuery]);
+    if (!currentUser) return;
+    if (activeTab === 'groups') {
+      // Server-side search for groups
+      fetchGroups(currentUser, debouncedSearch);
+    } else {
+      // Server-side search for users
+      fetchUsers(currentUser, debouncedSearch);
+    }
+  }, [debouncedSearch, setSearchQuery, currentUser, activeTab, fetchGroups, fetchUsers]);
 
   // Sync context value to local (in case cleared externally)
   React.useEffect(() => {
@@ -115,12 +128,12 @@ const ChatSidebar = () => {
 
   const handleSelectUser = (user) => {
     if (selectedUser?.id && String(selectedUser.id).toLowerCase() === String(user.id).toLowerCase()) return;
-    navigate(`/chat/user/${user.id}`);
+    navigate(`/chat/${user.id}`);
   };
 
   const handleSelectGroup = (group) => {
     if (selectedGroup?.id && String(selectedGroup.id).toLowerCase() === String(group.id).toLowerCase()) return;
-    navigate(`/chat/group/${group.id}`);
+    navigate(`/group/${group.id}`);
   };
 
   const handleLogout = () => {
@@ -204,7 +217,15 @@ const ChatSidebar = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => setShowAddConversationModal(true)} 
+          onClick={() => {
+            if (activeTab === 'groups') {
+              if (blockIfLocked('open-create')) return;
+              navigate({ pathname: '/group', search: '?modal=create-group' }, { replace: true });
+            } else {
+              if (blockIfLocked('open-add')) return;
+              navigate({ pathname: location.pathname, search: '?modal=add' }, { replace: true });
+            }
+          }} 
           className="rounded-2xl w-12 h-12 bg-[#040316] text-white shadow-lg active:scale-95 transition-all"
         >
           <Plus className="w-6 h-6" />
@@ -212,12 +233,12 @@ const ChatSidebar = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="users" className="flex-1 flex flex-col min-h-0" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} className="flex-1 flex flex-col min-h-0" onValueChange={setActiveTab}>
         <div className="px-4 sm:px-6 py-2">
           <TabsList className="w-full grid grid-cols-2 bg-transparent p-0 gap-4 h-12">
             <TabsTrigger 
               value="users" 
-              className="rounded-2xl border-2 border-slate-50 data-[state=active]:bg-white data-[state=active]:border-[#ABD4FF]/30 data-[state=active]:text-[#ABD4FF] data-[state=active]:shadow-sm font-black text-[11px] uppercase tracking-[0.2em] transition-all h-full"
+              className="rounded-2xl border-2 border-slate-50 data-[state=active]:bg-white data-[state=active]:border-[#5B21B6]/30 data-[state=active]:text-[#5B21B6] data-[state=active]:shadow-sm font-black text-[11px] uppercase tracking-[0.2em] transition-all h-full"
             >
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -244,7 +265,16 @@ const ChatSidebar = () => {
             <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => activeTab === 'users' ? setShowAddConversationModal(true) : setShowCreateGroup(true)}
+                onClick={() => {
+                  if (activeTab === 'users') {
+                    if (blockIfLocked('open-add')) return;
+                    navigate({ pathname: location.pathname, search: '?modal=add' }, { replace: true });
+                  } else {
+                    if (blockIfLocked('open-create')) return;
+                    const pathnameForCreate = activeTab === 'groups' ? '/group' : location.pathname;
+                    navigate({ pathname: pathnameForCreate, search: '?modal=create-group' }, { replace: true });
+                  }
+                }}
                 className="h-8 rounded-lg bg-deepNavy text-white text-[10px] font-black uppercase tracking-widest px-3 shadow-md active:scale-95 transition-all"
             >
                 <Plus className="w-3 h-3 mr-1.5" />

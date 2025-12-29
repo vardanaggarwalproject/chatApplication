@@ -71,6 +71,8 @@ const AuthRoute = ({ children }) => {
   return children;
 };
 
+
+
 const App = () => {
   return (
     <>
@@ -115,7 +117,7 @@ const App = () => {
           }
         />
         <Route
-          path="/chat/user/:userId"
+          path="/chat/:userId"
           element={
             <ProtectedRoute>
               <ChatWindow />
@@ -123,18 +125,27 @@ const App = () => {
           }
         />
         <Route
-          path="/chat/group/:groupId"
+          path="/group"
           element={
             <ProtectedRoute>
               <ChatWindow />
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/group/:groupId"
+          element={
+            <ProtectedRoute>
+              <ChatWindow />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Redirect any unknown routes to home */}
         <Route
           path="*"
           element={
-            <Navigate to="/" element={<h1>"welcome toootototototo"</h1>} />
+            <Navigate to="/" replace/>
           }
         />
       </Routes>

@@ -221,7 +221,8 @@ export const useChatSocket = () => {
                     });
                 });
             } else if (messageData.receiverId) {
-                const chatId = String(messageData.receiverId);
+                const chatId = String(messageData.receiverId).toLowerCase();
+                // Normalize keys to lowercase so we don't miss updates due to casing
                 setDirectMessages(prev => {
                     const msgs = prev[chatId] || [];
                     if (msgs.some(m => m.id === messageData.id)) return prev;
@@ -231,10 +232,32 @@ export const useChatSocket = () => {
                 
                 // Update sidebar users for direct message sent
                 setUsers(prev => {
+                    const exists = prev.find(u => String(u.id).toLowerCase() === chatId);
+                    if (!exists) {
+                        console.log(`🧭 [MSG_SENT] Adding new sidebar user for sent message: ${chatId}`);
+                        const newUser = {
+                            id: chatId,
+                            name: messageData.receiverName || String(messageData.receiverId),
+                            hasChat: true,
+                            unreadCount: 0,
+                            lastMessage: {
+                                content: messageData.content,
+                                createdAt: messageData.createdAt || messageData.created_at || new Date().toISOString(),
+                                senderId: String(messageData.senderId).toLowerCase()
+                            }
+                        };
+                        return [newUser, ...prev].sort((a, b) => {
+                            const timeA = new Date(a.lastMessage?.createdAt || a.lastMessage?.created_at || 0).getTime();
+                            const timeB = new Date(b.lastMessage?.createdAt || b.lastMessage?.created_at || 0).getTime();
+                            return timeB - timeA;
+                        });
+                    }
+
                     const updatedUsers = prev.map(u => {
                         if (String(u.id).toLowerCase() === chatId) {
                             return {
                                 ...u,
+                                hasChat: true,
                                 lastMessage: { 
                                     content: messageData.content, 
                                     createdAt: messageData.createdAt || messageData.created_at || new Date().toISOString(), 

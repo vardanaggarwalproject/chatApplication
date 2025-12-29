@@ -44,8 +44,10 @@ export const getAllUsers = async (req, res) => {
     console.log(`\n🔍 [GET_ALL_USERS] Starting optimized fetch for User: ${currentUserId}`);
     const startTime = Date.now();
 
-    // 1. Get all users except current user
-    const users = await db
+    const queryParam = (req.query.query || "").trim();
+
+    // 1. Get all users except current user; optionally filter by query (name/email)
+    let usersQuery = db
       .select({
         id: usersTable.id,
         name: usersTable.name,
@@ -56,6 +58,17 @@ export const getAllUsers = async (req, res) => {
       })
       .from(usersTable)
       .where(ne(sql`${usersTable.id}::text`, currentUserId));
+
+    if (queryParam) {
+      const likePattern = `%${queryParam}%`;
+      usersQuery = usersQuery.where(or(
+        sql`${usersTable.name} ILIKE ${likePattern}`,
+        sql`${usersTable.email} ILIKE ${likePattern}`
+      ));
+      console.log(`   🔎 [GET_ALL_USERS] Applying server-side filter for query: "${queryParam}"`);
+    }
+
+    const users = await usersQuery;
 
     console.log(`   - Found ${users.length} other users in DB`);
 

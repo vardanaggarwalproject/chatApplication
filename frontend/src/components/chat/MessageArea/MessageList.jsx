@@ -3,8 +3,8 @@ import { useChat } from '../../../context/ChatContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Hash, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Logo from '../../Logo';
-
+import Logo from '../../Logo';import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 const formatTime = (dateString) => {
   if (!dateString) return "";
   try {
@@ -38,7 +38,9 @@ const getInitials = (name) => {
 };
 
 const MessageList = () => {
-  const { activeMessages, currentUser, loadingMessages, pendingSelection, selectedUser, selectedGroup } = useChat();
+  const { activeMessages, currentUser, loadingMessages, pendingSelection, selectedUser, selectedGroup, users, fetchUsers, handleSelectNewUser } = useChat();
+
+  const isSelectedUserContact = selectedUser && users && users.find(u => String(u.id).toLowerCase() === String(selectedUser.id).toLowerCase() && u.addedForChat);
   const scrollRef = useRef(null);
   const messagesEndRef = useRef(null);
   const lastMessageCount = useRef(0);
@@ -122,9 +124,43 @@ const MessageList = () => {
             className="flex-1 p-4 sm:p-8 overflow-y-auto flex flex-col gap-4 sm:gap-4 z-10 h-full scroll-smooth"
           >
             {activeMessages.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm font-bold uppercase tracking-widest animate-pulse opacity-40">
-                <Hash className="w-8 h-8 mb-2" />
-                No messages yet
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-sm font-medium tracking-tight">
+                <Hash className="w-10 h-10 mb-2" />
+                <h3 className="text-lg font-black uppercase mb-1">No messages yet</h3>
+                {selectedUser && !selectedGroup && (
+                  <div className="max-w-xs text-center text-sm text-slate-500 mb-4">It looks like you haven't exchanged messages with <strong>{selectedUser.name}</strong> yet.</div>
+                )}
+
+                {/* If selected user is not a contact, show CTA */}
+                {selectedUser && !selectedGroup && !isSelectedUserContact && (
+                  <div className="flex items-center gap-3 mt-2">
+                    <Button onClick={async () => {
+                      try {
+                        const axios = (await import('@/utils/axiosConfig')).default;
+                        const resp = await axios.post('/api/user/contacts/add', { contactUserId: selectedUser.id });
+                        console.log('🧭 [MSG CTA] add contact resp:', resp?.data);
+                        toast.success('Contact added');
+
+                        // Ensure local UI adds the user and refresh server state
+                        handleSelectNewUser(selectedUser);
+                        try { fetchUsers(currentUser); } catch (e) { console.warn('fetchUsers failed', e); }
+                      } catch (err) {
+                        console.error('🧭 [MSG CTA] add contact failed', err?.response?.data || err.message);
+                        toast.error('Failed to add contact');
+                      }
+                    }}>
+                      Add as contact
+                    </Button>
+
+                    <Button variant="outline" onClick={() => {
+                      // Focus chat input: dispatch a custom event the input listens for
+                      window.dispatchEvent(new CustomEvent('focusMessageInput'));
+                    }}>
+                      Send a message
+                    </Button>
+                  </div>
+                )}
+
               </div>
             ) : (
               <>

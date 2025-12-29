@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Search } from "lucide-react";
 import axiosInstance from '../../../utils/axiosConfig';
 import socket from '../../../socket';
+import { useNavigate } from 'react-router-dom';
+import { blockIfLocked } from '@/lib/modalQueryGuard';
 
 const getInitials = (name) => {
   if (!name) return "?";
@@ -21,7 +23,9 @@ const getInitials = (name) => {
 };
 
 const CreateGroupModal = ({ isOpen, onClose }) => {
-  const { allUsers, fetchGroups } = useChat();
+  console.log('🔔 [CreateGroupModal] isOpen=', isOpen);
+  const navigate = useNavigate();
+  const { allUsers, fetchGroups, setSelectedGroup } = useChat();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
@@ -58,7 +62,28 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
       // Refresh groups list to show the new group
       fetchGroups();
       
-      onClose();
+      // Refresh groups list to show the new group
+      fetchGroups();
+
+      // Set selected group in context so UI updates instantly
+      try {
+        setSelectedGroup({ ...group, id: String(group.id).toLowerCase() });
+      } catch (err) {
+        console.warn('Could not set selected group in context:', err);
+      }
+
+      // Navigate to the newly created group and clear modal param from URL
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('modal')) params.delete('modal');
+        console.log('🧭 [CreateGroupModal] Navigating to new group:', group.id);
+        navigate({ pathname: `/group/${group.id}`, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+      } catch (err) {
+        // Fallback navigation
+        navigate(`/group/${group.id}`, { replace: true });
+      }
+
+      // Modal close is implicit via URL (we don't call onClose() here to avoid racing navigations)
       // Reset
       setName("");
       setDescription("");

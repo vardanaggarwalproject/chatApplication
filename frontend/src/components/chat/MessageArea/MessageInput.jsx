@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../../../context/ChatContext';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +7,15 @@ import { Send, Smile, Paperclip } from "lucide-react";
 const MessageInput = () => {
   const { handleSendMessage, selectedUser, selectedGroup } = useChat();
   const [text, setText] = useState("");
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    const handler = () => {
+      if (textareaRef.current) textareaRef.current.focus();
+    };
+    window.addEventListener('focusMessageInput', handler);
+    return () => window.removeEventListener('focusMessageInput', handler);
+  }, []);
 
   const onSend = (e) => {
     e?.preventDefault();
@@ -33,6 +42,7 @@ const MessageInput = () => {
           </Button>
           
           <Textarea
+            ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}

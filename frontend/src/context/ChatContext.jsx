@@ -43,18 +43,25 @@ export const ChatProvider = ({ children }) => {
   }, [selectedUser, selectedGroup, currentUser]);
 
   // Function Definitions
-  const fetchUsers = useCallback(async (user) => {
+  const fetchUsers = useCallback(async (user, query = "") => {
     const activeUser = user || currentUserRef.current;
     if (!activeUser) return;
     try {
       setLoadingUsers(true);
-      const response = await axiosInstance.get(`/api/user/all`);
+      const params = {};
+      if (query && query.trim()) params.query = query.trim();
+      const response = await axiosInstance.get(`/api/user/all`, { params });
       const currentId = String(activeUser.id).toLowerCase();
       let otherUsers = response.data.users
         .map(u => ({ ...u, id: String(u.id).toLowerCase() }))
         .filter(u => u.id !== currentId);
-      const usersToShow = otherUsers.filter(u => u.hasChat || u.addedForChat);
-      setUsers(usersToShow);
+      if (query && query.trim()) {
+        // When searching, show server-matched users (don't filter by hasChat/addedForChat)
+        setUsers(otherUsers);
+      } else {
+        const usersToShow = otherUsers.filter(u => u.hasChat || u.addedForChat);
+        setUsers(usersToShow);
+      }
       setAllUsers(otherUsers);
     } catch (error) {
       console.error("❌ Error fetching users:", error);
@@ -63,12 +70,14 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchGroups = useCallback(async (user) => {
+  const fetchGroups = useCallback(async (user, query = "") => {
     const activeUser = user || currentUserRef.current;
     if (!activeUser) return;
     try {
       setLoadingGroups(true);
-      const response = await axiosInstance.get(`/api/groups/my-groups`);
+      const params = {};
+      if (query && query.trim()) params.query = query.trim();
+      const response = await axiosInstance.get(`/api/groups/my-groups`, { params });
       const groupsData = response.data.groups || [];
       if (socket && socket.connected) {
         groupsData.forEach(group => socket.emit("join_group", { groupId: String(group.id).toLowerCase() }));
@@ -120,8 +129,12 @@ export const ChatProvider = ({ children }) => {
     }
   }, [currentUser, fetchUsers, fetchGroups]);
 
+  // NOTE: Server-side search calls for users/groups are triggered by the Sidebar
+  // when the debounced search value changes so we avoid calling both endpoints unnecessarily.
+
   // Fetch messages and reset unread counts when selection changes
   useEffect(() => {
+    console.log('🧭 [CTX] selectedUser changed:', selectedUser);
     if (selectedUser) {
       const isNewUser = lastUserIdRef.current !== selectedUser.id;
       
@@ -290,6 +303,7 @@ export const ChatProvider = ({ children }) => {
   }, [selectedUser, selectedGroup, socketConnected, currentUser]);
 
   const handleSelectNewUser = useCallback((user) => {
+    console.log('🧭 [CTX] handleSelectNewUser called with:', user);
     setUsers(prev => {
       if (prev.find(u => String(u.id) === String(user.id))) return prev;
       return [{ ...user, hasChat: false, addedForChat: true }, ...prev];

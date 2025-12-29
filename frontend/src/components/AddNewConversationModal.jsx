@@ -33,6 +33,7 @@ const AddNewConversationModal = ({
   onUserSelect,
   isLoading = false,
 }) => {
+  console.log('🔔 [AddNewConversationModal] isOpen=', isOpen);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -69,7 +70,7 @@ const AddNewConversationModal = ({
     console.log("📝 [ADD CONVERSATION] User selected:", user.name);
     onUserSelect(user);
     setSearchQuery(""); // Clear search
-    onOpenChange(false); // Close modal
+    // Don't call onOpenChange(false) here — ModalsContainer will handle closing/navigation to avoid conflicting navigations
   };
 
   const getInitials = (name) => {

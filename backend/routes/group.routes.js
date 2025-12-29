@@ -177,10 +177,12 @@ router.post("/create", authenticateUser, async (req, res) => {
   }
 });
 
-// Get user's groups
+// Get user's groups (supports optional search via ?query=)
 router.get("/my-groups", authenticateUser, async (req, res) => {
   try {
-    const userGroups = await db
+    const queryParam = (req.query.query || "").trim();
+
+    let groupsQuery = db
       .select({
         id: groupsTable.id,
         name: groupsTable.name,
@@ -192,8 +194,27 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
       .innerJoin(groupsTable, eq(groupMembersTable.groupId, groupsTable.id))
       .where(eq(groupMembersTable.userId, req.userId));
 
+    if (queryParam) {
+      const likePattern = `%${queryParam}%`;
+      groupsQuery = groupsQuery.where(sql`${groupsTable.name} ILIKE ${likePattern}`);
+      console.log(`   🔎 [GET_MY_GROUPS] Applying server-side filter for query: "${queryParam}"`);
+    }
+
+    const userGroups = await groupsQuery;
+
+    // Deduplicate groups by id in case of duplicate join rows
+    const groupsById = new Map();
+    userGroups.forEach(g => {
+      const gid = String(g.id);
+      if (!groupsById.has(gid)) groupsById.set(gid, g);
+      else {
+        console.warn(`⚠️ Duplicate group row detected for group id ${gid}, ignoring duplicate`);
+      }
+    });
+    const uniqueUserGroups = Array.from(groupsById.values());
+
     // Extract group IDs
-    const groupIds = userGroups.map((g) => g.id);
+    const groupIds = uniqueUserGroups.map((g) => g.id);
 
     // Map for last messages
     const lastMessageMap = new Map();
@@ -242,7 +263,7 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
       });
     }
 
-    const groupsWithLastMessage = userGroups.map((group) => ({
+    const groupsWithLastMessage = uniqueUserGroups.map((group) => ({
       ...group,
       lastMessage: lastMessageMap.get(group.id) || null,
       unreadCount: 0, // Placeholder
@@ -252,6 +273,28 @@ router.get("/my-groups", authenticateUser, async (req, res) => {
   } catch (error) {
     console.error("Error fetching groups:", error);
     res.status(500).json({ error: "Failed to fetch groups", details: error.message });
+  }
+});
+
+// Public group info (no membership check)
+router.get("/:groupId/info", authenticateUser, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    // Return minimal public info (avoid exposing members)
+    const [group] = await db
+      .select({ id: groupsTable.id, name: groupsTable.name })
+      .from(groupsTable)
+      .where(eq(groupsTable.id, groupId));
+
+    if (!group) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    res.json({ group });
+  } catch (error) {
+    console.error("Error fetching group info:", error);
+    res.status(500).json({ error: "Failed to fetch group info" });
   }
 });
 
