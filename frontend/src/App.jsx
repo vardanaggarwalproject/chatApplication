@@ -114,6 +114,22 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/chat/user/:userId"
+          element={
+            <ProtectedRoute>
+              <ChatWindow />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat/group/:groupId"
+          element={
+            <ProtectedRoute>
+              <ChatWindow />
+            </ProtectedRoute>
+          }
+        />
         {/* Redirect any unknown routes to home */}
         <Route
           path="*"

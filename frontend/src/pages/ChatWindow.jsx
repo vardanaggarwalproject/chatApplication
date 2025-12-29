@@ -1,22 +1,83 @@
 import React from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ChatProvider, useChat } from '../context/ChatContext';
 import { useChatSocket } from '../hooks/useChatSocket';
 import ChatSidebar from '../components/chat/Sidebar/ChatSidebar';
 import MessageAreaContainer from '../components/chat/MessageArea/MessageAreaContainer';
 import ModalsContainer from '../components/chat/Modals/ModalsContainer';
 import { useTabSynchronization } from '../hooks/useTabSynchronization';
-
 import { useOnlineStatusManager } from '../hooks/useOnlineStatusManager';
 
 const ChatLayout = () => {
+    const { userId, groupId } = useParams();
+    const navigate = useNavigate();
     const { 
         currentUser, 
-        setUsers, 
+        users,
+        groups,
+        allUsers,
         setSelectedUser, 
         selectedUser, 
         selectedGroup,
-        setSelectedGroup 
+        setSelectedGroup,
+        loadingUsers,
+        loadingGroups,
+        handleSelectNewUser
     } = useChat();
+
+    // Sync URL with Context
+    React.useEffect(() => {
+        // Don't sync until users and groups are loaded
+        if (loadingUsers || loadingGroups) return;
+
+        if (userId) {
+            const standardizedUserId = String(userId).toLowerCase();
+            const currentSelectedId = selectedUser ? String(selectedUser.id).toLowerCase() : null;
+
+            if (currentSelectedId !== standardizedUserId) {
+                // Find in active users first
+                const user = users.find(u => String(u.id).toLowerCase() === standardizedUserId);
+                if (user) {
+                    setSelectedGroup(null);
+                    setSelectedUser(user);
+                } else {
+                    // Try to find in allUsers (maybe hasn't been added to sidebar yet)
+                    const userFromAll = allUsers.find(u => String(u.id).toLowerCase() === standardizedUserId);
+                    if (userFromAll) {
+                        handleSelectNewUser(userFromAll);
+                    } else {
+                        // User not found anywhere, redirect to chat home
+                        console.warn(`User ${userId} not found, redirecting to /chat`);
+                        navigate('/chat', { replace: true });
+                    }
+                }
+            }
+        } else if (groupId) {
+            const standardizedGroupId = String(groupId).toLowerCase();
+            const currentSelectedGroupId = selectedGroup ? String(selectedGroup.id).toLowerCase() : null;
+
+            if (currentSelectedGroupId !== standardizedGroupId) {
+                const group = groups.find(g => String(g.id).toLowerCase() === standardizedGroupId);
+                if (group) {
+                    setSelectedUser(null);
+                    setSelectedGroup(group);
+                } else {
+                    // Group not found, redirect
+                    console.warn(`Group ${groupId} not found, redirecting to /chat`);
+                    navigate('/chat', { replace: true });
+                }
+            }
+        } else {
+            // No params in URL, ensure context selection is cleared
+            if (selectedUser || selectedGroup) {
+                setSelectedUser(null);
+                setSelectedGroup(null);
+            }
+        }
+    }, [userId, groupId, users, groups, allUsers, loadingUsers, loadingGroups, navigate, setSelectedUser, setSelectedGroup, handleSelectNewUser, selectedUser, selectedGroup]); 
+    // Note: selectedUser and selectedGroup are used inside but we comparison check to break loops
+
+
     // Initialize socket connection and listeners
     useChatSocket();
     // Initialize tab sync (logout across tabs)
