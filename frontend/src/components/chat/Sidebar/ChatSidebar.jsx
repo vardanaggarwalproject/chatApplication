@@ -95,12 +95,12 @@ const ChatSidebar = () => {
     const params = new URLSearchParams(location.search);
     const modal = params.get('modal');
 
-    if (groupId || modal === 'create-group') {
+    if (groupId || location.pathname.startsWith('/group') || modal === 'create-group') {
       setActiveTab("groups");
-    } else if (userId) {
+    } else if (userId || location.pathname.startsWith('/chat')) {
       setActiveTab("users");
     }
-  }, [groupId, userId, location.search]);
+  }, [groupId, userId, location.pathname, location.search]);
   
   // Local state for debounced search
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -233,7 +233,17 @@ const ChatSidebar = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} className="flex-1 flex flex-col min-h-0" onValueChange={setActiveTab}>
+      <Tabs 
+        value={activeTab} 
+        className="flex-1 flex flex-col min-h-0" 
+        onValueChange={(value) => {
+          if (value === 'users') {
+            navigate('/chat');
+          } else if (value === 'groups') {
+            navigate('/group');
+          }
+        }}
+      >
         <div className="px-4 sm:px-6 py-2">
           <TabsList className="w-full grid grid-cols-2 bg-transparent p-0 gap-4 h-12">
             <TabsTrigger 
