@@ -14,14 +14,16 @@ const getInitials = (name) => {
     .slice(0, 2);
 };
 
+import { useNavigate } from 'react-router-dom';
+
 const ChatHeader = () => {
+  const navigate = useNavigate();
   const { selectedUser, setSelectedUser, selectedGroup, setSelectedGroup, setShowGroupMembersModal } = useChat();
 
   if (!selectedUser && !selectedGroup) return null;
 
   const handleBack = () => {
-    setSelectedUser(null);
-    setSelectedGroup(null);
+    navigate('/chat');
   };
 
   return (

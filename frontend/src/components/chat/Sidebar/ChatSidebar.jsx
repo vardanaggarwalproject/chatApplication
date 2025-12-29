@@ -65,9 +65,12 @@ const getInitials = (name) => {
     .slice(0, 2);
 };
 
+import { useNavigate, useParams } from 'react-router-dom';
 import { useDebounce } from '../../../hooks/useDebounce';
 
 const ChatSidebar = () => {
+  const navigate = useNavigate();
+  const { userId, groupId } = useParams();
   const {
     currentUser,
     filteredUsers,
@@ -75,21 +78,24 @@ const ChatSidebar = () => {
     searchQuery,
     setSearchQuery,
     selectedUser,
-    setSelectedUser,
     selectedGroup,
-    setSelectedGroup,
     setShowAddConversationModal,
     setShowCreateGroup,
     setShowEditProfile,
-    setLoadingMessages,
-    setPendingSelection,
     loadingUsers,
     loadingGroups,
-    fetchDirectMessages,
-    fetchGroupMessages
   } = useChat();
 
   const [activeTab, setActiveTab] = useState("users");
+
+  // Sync activeTab with URL
+  React.useEffect(() => {
+    if (groupId) {
+      setActiveTab("groups");
+    } else if (userId) {
+      setActiveTab("users");
+    }
+  }, [groupId, userId]);
   
   // Local state for debounced search
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -109,14 +115,12 @@ const ChatSidebar = () => {
 
   const handleSelectUser = (user) => {
     if (selectedUser?.id && String(selectedUser.id).toLowerCase() === String(user.id).toLowerCase()) return;
-    setSelectedGroup(null);
-    setSelectedUser(user);
+    navigate(`/chat/user/${user.id}`);
   };
 
   const handleSelectGroup = (group) => {
     if (selectedGroup?.id && String(selectedGroup.id).toLowerCase() === String(group.id).toLowerCase()) return;
-    setSelectedUser(null);
-    setSelectedGroup(group);
+    navigate(`/chat/group/${group.id}`);
   };
 
   const handleLogout = () => {
